@@ -1,12 +1,14 @@
 "use client";
 
 import { Swiper, SwiperSlide } from "swiper/react";
+import { FreeMode, Mousewheel } from "swiper/modules";
 import { motion } from "framer-motion";
 import VillaCard from "@/components/ui/VillaCard";
 import { VILLAS } from "@/lib/data/villas";
 
 // Import Swiper styles
 import "swiper/css";
+import "swiper/css/free-mode";
 
 export default function OurVillasSection() {
   return (
@@ -72,9 +74,21 @@ export default function OurVillasSection() {
         {/* Villas Slider */}
         <div className="mb-12 lg:mb-14 -mx-4 lg:mx-0">
           <Swiper
+            modules={[FreeMode, Mousewheel]}
             spaceBetween={16}
             slidesPerView={1.3}
             speed={600}
+            freeMode={{
+              enabled: true,
+              momentum: true,
+              momentumRatio: 0.5,
+            }}
+            mousewheel={{
+              forceToAxis: true,
+              sensitivity: 0.5,
+              releaseOnEdges: true,
+              thresholdDelta: 10,
+            }}
             breakpoints={{
               640: {
                 slidesPerView: 1.5,

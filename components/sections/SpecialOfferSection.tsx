@@ -34,9 +34,8 @@ export default function SpecialOfferSection() {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="text-[#cab797] text-base font-semibold leading-6"
             >
-              Save 15% and get the best available rate by booking directly
-              through our website! Your exclusive rate is automatically applied
-              at checkout.
+              Book directly through our website and enjoy exclusive benefits
+              including complimentary breakfast and the best available rates.
             </motion.p>
 
             {/* Additional Info */}
@@ -47,7 +46,7 @@ export default function SpecialOfferSection() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="text-[#cab797] text-base leading-6"
             >
-              Free breakfast included with direct bookings
+              Experience luxury in the heart of Ubud with special perks for direct bookings
             </motion.p>
 
             {/* Button */}

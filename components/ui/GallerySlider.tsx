@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { FreeMode } from "swiper/modules";
+import { FreeMode, Mousewheel } from "swiper/modules";
 import { motion } from "framer-motion";
 import { GalleryImage } from "@/types/gallery";
 
@@ -18,11 +18,21 @@ export default function GallerySlider({ images }: GallerySliderProps) {
   return (
     <div>
       <Swiper
-        modules={[FreeMode]}
+        modules={[FreeMode, Mousewheel]}
         spaceBetween={16}
         slidesPerView="auto"
         speed={600}
-        freeMode={true}
+        freeMode={{
+          enabled: true,
+          momentum: true,
+          momentumRatio: 0.5,
+        }}
+        mousewheel={{
+          forceToAxis: true,
+          sensitivity: 0.5,
+          releaseOnEdges: true,
+          thresholdDelta: 10,
+        }}
         className="!pl-4 lg:!pl-14"
       >
         {images.map((image, index) => (
