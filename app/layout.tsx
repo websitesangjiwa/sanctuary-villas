@@ -3,7 +3,6 @@ import { Ovo, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import Navbar from "@/components/layout/Navbar";
-import PromoBanner from "@/components/layout/PromoBanner";
 import Footer from "@/components/layout/Footer";
 import StructuredData from "@/components/StructuredData";
 
@@ -82,7 +81,6 @@ export default function RootLayout({
       <body className="font-sans">
         <Providers>
           <Navbar />
-          <PromoBanner />
           {children}
           <Footer />
         </Providers>
