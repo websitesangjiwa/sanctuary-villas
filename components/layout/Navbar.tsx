@@ -18,24 +18,27 @@ export default function Navbar() {
   ];
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, scrollTo: string | null) => {
-    if (scrollTo && pathname === "/") {
+    if (pathname === "/") {
       e.preventDefault();
-      const element = document.getElementById(scrollTo);
-      if (element) {
-        const navbarHeight = 80; // Approximate navbar height
-        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - navbarHeight;
+      setIsMenuOpen(false);
 
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-      }
-      setIsMenuOpen(false);
-    } else if (scrollTo === null && pathname === "/") {
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsMenuOpen(false);
+      setTimeout(() => {
+        if (scrollTo) {
+          const element = document.getElementById(scrollTo);
+          if (element) {
+            const navbarHeight = 80;
+            const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+            const offsetPosition = elementPosition - navbarHeight;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth",
+            });
+          }
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, 100);
     }
   };
 
