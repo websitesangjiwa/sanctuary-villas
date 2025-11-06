@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import StructuredData from "@/components/StructuredData";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const ovo = Ovo({
   weight: "400",
@@ -79,6 +80,7 @@ export default function RootLayout({
         <StructuredData />
       </head>
       <body className="font-sans">
+        <GoogleAnalytics />
         <Providers>
           <Navbar />
           {children}
