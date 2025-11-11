@@ -4,7 +4,7 @@ export default function StructuredData() {
     "@type": "Hotel",
     "name": "Sanctuary Villas Ubud",
     "description": "Luxury private villas nestled in Ubud's majestic forest, offering a harmonious blend of minimalist luxury and pristine natural beauty.",
-    "image": "https://sanctuaryvillas.com/images/CE4A0786(1).jpg",
+    "image": "https://sanctuaryvillas.co/images/CE4A0786(1).jpg",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "Jalan Bisma",
@@ -17,7 +17,7 @@ export default function StructuredData() {
       "latitude": -8.5069,
       "longitude": 115.2625
     },
-    "url": "https://sanctuaryvillas.com",
+    "url": "https://sanctuaryvillas.co",
     "telephone": "+62-878-1727-4325",
     "priceRange": "$$$",
     "starRating": {
@@ -50,8 +50,8 @@ export default function StructuredData() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Sanctuary Villas Ubud",
-    "url": "https://sanctuaryvillas.com",
-    "logo": "https://sanctuaryvillas.com/logo.png",
+    "url": "https://sanctuaryvillas.co",
+    "logo": "https://sanctuaryvillas.co/logo.png",
     "description": "Luxury villa accommodation in Ubud, Bali",
     "address": {
       "@type": "PostalAddress",
@@ -73,8 +73,8 @@ export default function StructuredData() {
     "@context": "https://schema.org",
     "@type": "LodgingBusiness",
     "name": "Sanctuary Villas Ubud",
-    "image": "https://sanctuaryvillas.com/images/CE4A0786(1).jpg",
-    "url": "https://sanctuaryvillas.com",
+    "image": "https://sanctuaryvillas.co/images/CE4A0786(1).jpg",
+    "url": "https://sanctuaryvillas.co",
     "telephone": "+62-878-1727-4325",
     "address": {
       "@type": "PostalAddress",

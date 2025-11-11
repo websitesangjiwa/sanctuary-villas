@@ -19,7 +19,7 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://sanctuaryvillas.com'),
+  metadataBase: new URL('https://sanctuaryvillas.co'),
   title: {
     default: 'Sanctuary Villas Ubud – Private Pool Villas | Best Price Direct + Breakfast',
     template: '%s | Sanctuary Villas Ubud'
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://sanctuaryvillas.com',
+    url: 'https://sanctuaryvillas.co',
     siteName: 'Sanctuary Villas Ubud',
     title: 'Sanctuary Villas Ubud – Private Pool Villas | Best Price Direct + Breakfast',
     description: 'Stay in the heart of Ubud at Sanctuary Villas on Jalan Bisma. Book direct for the best price guaranteed and free à la carte breakfast daily. Private pool villas, peaceful atmosphere, adults only.',
