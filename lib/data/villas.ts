@@ -10,7 +10,7 @@ export const VILLAS: Villa[] = [
     description: "Where luxury meets tranquility",
     bedrooms: 2,
     maxGuests: 4,
-    image: "https://www.figma.com/api/mcp/asset/40d6f881-2926-4f0c-baad-096e0ceebba2",
+    image: "/images/CE4A0786(1).webp",
     slug: "villa-satu",
   },
   {
@@ -19,7 +19,7 @@ export const VILLAS: Villa[] = [
     description: "Your private paradise",
     bedrooms: 3,
     maxGuests: 6,
-    image: "https://www.figma.com/api/mcp/asset/46ea1105-1e11-49ad-b5a8-5c01b8baed61",
+    image: "/images/CE4A0900.webp",
     slug: "villa-dua",
   },
   {
@@ -28,7 +28,7 @@ export const VILLAS: Villa[] = [
     description: "Elevated luxury living",
     bedrooms: 4,
     maxGuests: 8,
-    image: "https://www.figma.com/api/mcp/asset/006c8f5d-6006-4106-93fd-be346d351379",
+    image: "/images/CE4A0910.webp",
     slug: "villa-tiga",
   },
   {
@@ -37,7 +37,7 @@ export const VILLAS: Villa[] = [
     description: "Tropical bliss awaits",
     bedrooms: 2,
     maxGuests: 4,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A0930.webp",
     slug: "villa-empat",
   },
   {
@@ -46,7 +46,7 @@ export const VILLAS: Villa[] = [
     description: "Peace in paradise",
     bedrooms: 1,
     maxGuests: 2,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A0961.webp",
     slug: "tranquil-pavilion",
   },
   {
@@ -55,7 +55,7 @@ export const VILLAS: Villa[] = [
     description: "Where elegance resides",
     bedrooms: 3,
     maxGuests: 6,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A0964.webp",
     slug: "golden-sanctuary",
   },
   {
@@ -64,7 +64,7 @@ export const VILLAS: Villa[] = [
     description: "Coastal luxury living",
     bedrooms: 4,
     maxGuests: 8,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A0972.webp",
     slug: "ocean-whisper",
   },
   {
@@ -73,7 +73,7 @@ export const VILLAS: Villa[] = [
     description: "Highland hideaway",
     bedrooms: 2,
     maxGuests: 4,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A1064.webp",
     slug: "mountain-mist",
   },
   {
@@ -82,7 +82,7 @@ export const VILLAS: Villa[] = [
     description: "Island paradise found",
     bedrooms: 3,
     maxGuests: 6,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A1091.webp",
     slug: "tropical-dream",
   },
   {
@@ -91,7 +91,7 @@ export const VILLAS: Villa[] = [
     description: "Eco-luxury retreat",
     bedrooms: 2,
     maxGuests: 4,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A6041.webp",
     slug: "bamboo-bliss",
   },
   {
@@ -100,7 +100,7 @@ export const VILLAS: Villa[] = [
     description: "Palatial perfection",
     bedrooms: 5,
     maxGuests: 10,
-    image: "https://www.figma.com/api/mcp/asset/7c3e2e5e-1d78-4a66-9a4a-8e335bd4bc09",
+    image: "/images/CE4A6111.webp",
     slug: "royal-residence",
   },
 ];
@@ -112,14 +112,14 @@ export const VILLA_STYLES: VillaStyle[] = [
     description:
       "Traditional Javanese architecture meets modern luxury. These villas feature the iconic Joglo wooden structure with soaring ceilings and open-air living spaces.",
     images: [
-      "/images/villas/joglo/cover.jpg",
-      "/images/villas/joglo/Sanctury Bisma day Four-003.jpg",
-      "/images/villas/joglo/Sanctury Bisma day Four-025.jpg",
-      "/images/villas/joglo/villa 101 pool pink to blue-151.jpg",
-      "/images/villas/joglo/Sanctury Bisma day one-103.jpg",
-      "/images/villas/joglo/Sanctury Bisma day one-104.jpg",
-      "/images/villas/joglo/Sanctury Bisma day two-17.jpg",
-      "/images/villas/joglo/Sanctury Bisma day two-20.jpg",
+      "/images/villas/joglo/cover.webp",
+      "/images/villas/joglo/Sanctury Bisma day Four-003.webp",
+      "/images/villas/joglo/Sanctury Bisma day Four-025.webp",
+      "/images/villas/joglo/villa 101 pool pink to blue-151.webp",
+      "/images/villas/joglo/Sanctury Bisma day one-103.webp",
+      "/images/villas/joglo/Sanctury Bisma day one-104.webp",
+      "/images/villas/joglo/Sanctury Bisma day two-17.webp",
+      "/images/villas/joglo/Sanctury Bisma day two-20.webp",
     ],
     roomTypes: [
       {
@@ -138,14 +138,14 @@ export const VILLA_STYLES: VillaStyle[] = [
     description:
       "Inspired by the distinctive Minangkabau architecture with its dramatic curved roof. These spacious villas offer contemporary comfort with traditional elegance.",
     images: [
-      "/images/villas/minang/cover.jpg",
-      "/images/villas/minang/CE4A1832.jpg",
-      "/images/villas/minang/CE4A1825.jpg",
-      "/images/villas/minang/CE4A1777.jpg",
-      "/images/villas/minang/CE4A1809.jpg",
-      "/images/villas/minang/CE4A1813.jpg",
-      "/images/villas/minang/CE4A5577.jpg",
-      "/images/villas/minang/CE4A5561.jpg",
+      "/images/villas/minang/cover.webp",
+      "/images/villas/minang/CE4A1832.webp",
+      "/images/villas/minang/CE4A1825.webp",
+      "/images/villas/minang/CE4A1777.webp",
+      "/images/villas/minang/CE4A1809.webp",
+      "/images/villas/minang/CE4A1813.webp",
+      "/images/villas/minang/CE4A5577.webp",
+      "/images/villas/minang/CE4A5561.webp",
     ],
     roomTypes: [
       {

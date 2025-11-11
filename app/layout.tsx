@@ -21,10 +21,10 @@ const nunitoSans = Nunito_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL('https://sanctuaryvillas.com'),
   title: {
-    default: 'Sanctuary Villas Ubud - Luxury Private Villas in Bali',
+    default: 'Sanctuary Villas Ubud – Private Pool Villas | Best Price Direct + Breakfast',
     template: '%s | Sanctuary Villas Ubud'
   },
-  description: 'Experience serene luxury at Sanctuary Villas, nestled in Ubud\'s majestic forest. Book direct for best price guarantee and complimentary breakfast at our exclusive private villas in Bali.',
+  description: 'Stay in the heart of Ubud at Sanctuary Villas on Jalan Bisma. Book direct for the best price guaranteed and free à la carte breakfast daily. Private pool villas, peaceful atmosphere, adults only.',
   keywords: [
     'Ubud villas', 'Bali accommodation', 'luxury villas Bali',
     'Ubud hotels', 'private villas Ubud', 'Sanctuary Villas',
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://sanctuaryvillas.com',
     siteName: 'Sanctuary Villas Ubud',
-    title: 'Sanctuary Villas Ubud - Luxury Private Villas in Bali',
-    description: 'Private luxury villas in the heart of Ubud, Bali. Book direct for best rates and complimentary breakfast.',
+    title: 'Sanctuary Villas Ubud – Private Pool Villas | Best Price Direct + Breakfast',
+    description: 'Stay in the heart of Ubud at Sanctuary Villas on Jalan Bisma. Book direct for the best price guaranteed and free à la carte breakfast daily. Private pool villas, peaceful atmosphere, adults only.',
     images: [{
       url: '/images/CE4A0786(1).jpg',
       width: 1200,
@@ -52,8 +52,8 @@ export const metadata: Metadata = {
 
   twitter: {
     card: 'summary_large_image',
-    title: 'Sanctuary Villas Ubud - Luxury Private Villas in Bali',
-    description: 'Private luxury villas in the heart of Ubud, Bali',
+    title: 'Sanctuary Villas Ubud – Private Pool Villas | Best Price Direct + Breakfast',
+    description: 'Stay in the heart of Ubud at Sanctuary Villas on Jalan Bisma. Book direct for the best price guaranteed and free à la carte breakfast daily.',
     images: ['/images/CE4A0786(1).jpg'],
   },
 

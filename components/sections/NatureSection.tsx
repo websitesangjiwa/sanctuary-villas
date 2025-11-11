@@ -4,6 +4,7 @@ import Image from "next/image";
 import {motion} from "framer-motion";
 import GallerySlider from "@/components/ui/GallerySlider";
 import {GALLERY_IMAGES} from "@/lib/data/gallery";
+import blurData from "@/lib/data/blur-data.json";
 
 export default function NatureSection() {
   return (
@@ -110,10 +111,12 @@ export default function NatureSection() {
               className="absolute bottom-0 left-0 w-[60%] h-[70%] md:w-[380px] md:h-[380px] lg:w-[377px] lg:h-[527px] overflow-hidden shadow-xl"
             >
               <Image
-                src="/images/CE4A6100.jpg"
+                src="/images/CE4A6100.webp"
                 alt="Sanctuary Villas Ubud exterior surrounded by tropical forest and lush greenery in Bali"
                 fill
-                loading="lazy"
+                priority
+                placeholder="blur"
+                blurDataURL={blurData["/images/CE4A6100.webp"]}
                 className="object-cover"
                 sizes="(max-width: 768px) 60vw, (max-width: 1024px) 280px, 377px"
               />
@@ -128,10 +131,12 @@ export default function NatureSection() {
               className="absolute top-[-73px] right-0 w-[55%] h-[65%] md:top-[-50px] md:right-0 md:w-[360px] lg:left-20 md:h-[360px] lg:top-[-73px] lg:w-[377px] lg:h-[527px] overflow-hidden shadow-xl"
             >
               <Image
-                src="/images/583292270.jpg"
+                src="/images/583292270.webp"
                 alt="Luxury villa interior with minimalist design and natural materials at Sanctuary Villas Ubud"
                 fill
-                loading="lazy"
+                priority
+                placeholder="blur"
+                blurDataURL={blurData["/images/583292270.webp"]}
                 className="object-cover"
                 sizes="(max-width: 768px) 55vw, (max-width: 1024px) 280px, 377px"
               />

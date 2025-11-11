@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-blur": "node scripts/generate-blur-data.js",
+    "prebuild": "npm run generate-blur"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.60.2",

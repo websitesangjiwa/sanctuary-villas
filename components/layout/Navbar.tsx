@@ -53,7 +53,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="relative h-[53px] w-[155px] shrink-0">
             <Image
-              src="https://www.figma.com/api/mcp/asset/6ca24bd6-639d-4978-9248-dfee24512ec8"
+              src="/logo.png"
               alt="Sanctuary Villas"
               fill
               className="object-contain"

@@ -72,7 +72,7 @@ export default function SpecialOfferSection() {
             className="relative h-[300px] lg:h-auto shadow-2xl"
           >
             <Image
-              src="https://www.figma.com/api/mcp/asset/8d7ba196-92b2-4326-a619-1292f235f50f"
+              src="/images/CE4A6347.webp"
               alt="Luxury villa bedroom"
               fill
               className="object-cover"

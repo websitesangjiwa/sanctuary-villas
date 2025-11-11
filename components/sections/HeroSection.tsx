@@ -11,7 +11,7 @@ export default function HeroSection() {
       <BackgroundVideo
         desktopSrc="/videos/hero-desktop.mp4"
         mobileSrc="/videos/hero-mobile.mp4"
-        poster="/images/CE4A0786(1).jpg"
+        poster="/images/CE4A0786(1).webp"
         overlay={true}
         overlayOpacity={0.35}
       />
@@ -27,7 +27,7 @@ export default function HeroSection() {
             className="relative w-[280px] h-[96px] lg:w-[403px] lg:h-[138px]"
           >
             <Image
-              src="https://www.figma.com/api/mcp/asset/54e3e27c-4c2a-4acd-b5db-21c2bd39032e"
+              src="/logo.png"
               alt="Sanctuary Villas Ubud - Luxury Private Villas in Bali"
               fill
               className="object-contain"

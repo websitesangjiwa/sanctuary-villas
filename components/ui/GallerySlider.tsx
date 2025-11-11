@@ -59,6 +59,8 @@ export default function GallerySlider({ images }: GallerySliderProps) {
                 width={0}
                 height={500}
                 loading="lazy"
+                placeholder={image.blurDataURL ? "blur" : "empty"}
+                blurDataURL={image.blurDataURL}
                 className="w-auto h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 40vw, 400px"
               />
