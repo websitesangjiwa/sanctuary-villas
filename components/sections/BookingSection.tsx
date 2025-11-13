@@ -153,6 +153,11 @@ export default function BookingSection() {
                       setShowCalendar(false);
                       setActiveField(null);
                     }}
+                    activeField="checkin"
+                    onOpenCheckout={() => {
+                      setActiveField("checkout");
+                      setShowCalendar(true);
+                    }}
                   />
                 )}
               </div>
@@ -217,6 +222,7 @@ export default function BookingSection() {
                       setShowCalendar(false);
                       setActiveField(null);
                     }}
+                    activeField="checkout"
                   />
                 )}
               </div>

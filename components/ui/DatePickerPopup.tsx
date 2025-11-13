@@ -2,24 +2,70 @@
 
 import { useState } from "react";
 import { DayPicker, DateRange } from "react-day-picker";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, addDays } from "date-fns";
 import "react-day-picker/style.css";
 
 interface DatePickerPopupProps {
   range: DateRange | undefined;
   onSelect: (range: DateRange | undefined) => void;
   onClose: () => void;
+  activeField: "checkin" | "checkout";
+  onOpenCheckout?: () => void;
 }
 
 export default function DatePickerPopup({
   range,
   onSelect,
   onClose,
+  activeField,
+  onOpenCheckout,
 }: DatePickerPopupProps) {
   const [month, setMonth] = useState<Date>(new Date());
 
   const nights =
     range?.from && range?.to ? differenceInDays(range.to, range.from) : 0;
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) return;
+
+    if (activeField === "checkin") {
+      // Update check-in date
+      const newRange: DateRange = {
+        from: selectedDate,
+        to: range?.to,
+      };
+      onSelect(newRange);
+      // Close after selecting check-in
+      setTimeout(() => {
+        onClose();
+        // Auto-open check-out if it's the first selection (no previous range)
+        if (!range?.from && onOpenCheckout) {
+          setTimeout(() => onOpenCheckout(), 300);
+        }
+      }, 300);
+    } else {
+      // Update check-out date
+      // Validate: check-out must be after check-in
+      if (range?.from && selectedDate < range.from) {
+        // If selected date is before check-in, reset range
+        const newRange: DateRange = {
+          from: selectedDate,
+          to: undefined,
+        };
+        onSelect(newRange);
+      } else {
+        const newRange: DateRange = {
+          from: range?.from,
+          to: selectedDate,
+        };
+        onSelect(newRange);
+        // Auto-close when both dates are selected
+        if (range?.from) {
+          setTimeout(() => onClose(), 300);
+        }
+      }
+    }
+  };
 
   return (
     <div
@@ -29,17 +75,11 @@ export default function DatePickerPopup({
       {/* Calendar */}
       <div className="mb-6">
         <DayPicker
-          mode="range"
-          selected={range}
+          mode="single"
+          selected={activeField === "checkin" ? range?.from : range?.to}
           month={month}
           onMonthChange={setMonth}
-          onSelect={(newRange) => {
-            onSelect(newRange);
-            // Auto-close when both dates are selected
-            if (newRange?.from && newRange?.to) {
-              setTimeout(() => onClose(), 300);
-            }
-          }}
+          onSelect={handleDateSelect}
           disabled={{ before: new Date() }}
           numberOfMonths={1}
           showOutsideDays={true}
