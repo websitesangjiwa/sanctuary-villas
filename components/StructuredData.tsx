@@ -133,6 +133,51 @@ export default function StructuredData() {
     "reviewBody": "This is my third time visiting Bali (Ubud) & I don't think I'll stay anywhere else after my experience here. Top notch service & staff, available 24/7 via WhatsApp, gorgeous architecture & high end finished, and they have created a sense of privacy and tranquility while still being right in the action of central Ubud."
   };
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do I get the best rate when booking directly?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. You will always receive the best available rate and complimentary à la carte breakfast when booking directly through our official website."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is breakfast included?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Breakfast is included for all direct bookings. Guests booking through OTA platforms may have different inclusions depending on their rate plan."
+        }
+      }
+    ]
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Sanctuary Villas Ubud",
+    "url": "https://sanctuaryvillas.co",
+    "description": "Luxury private pool villas in Ubud, Bali. Book direct for the best rate and complimentary breakfast.",
+    "potentialAction": [
+      {
+        "@type": "ViewAction",
+        "name": "Book Now",
+        "url": "https://sanctuaryvillas.co#booking",
+        "description": "Check availability and secure the best rate when booking directly through our official website."
+      },
+      {
+        "@type": "ViewAction",
+        "name": "Villas",
+        "url": "https://sanctuaryvillas.co#villa-styles",
+        "description": "Explore our private pool villas designed for comfort, privacy, and restful Ubud living."
+      }
+    ]
+  };
+
   return (
     <>
       <script
@@ -150,6 +195,14 @@ export default function StructuredData() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
       />
     </>
   );

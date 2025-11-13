@@ -119,14 +119,21 @@ export default function Footer() {
                 onClick={(e) => handleScrollToSection(e, "gallery")}
                 className="text-[#cab797] text-base font-medium hover:text-surface transition-colors"
               >
-                About Us
+                Gallery
               </Link>
               <Link
                 href="/"
                 onClick={(e) => handleScrollToSection(e, "booking")}
                 className="text-[#cab797] text-base font-medium hover:text-surface transition-colors"
               >
-                Book Now
+                Promotion
+              </Link>
+              <Link
+                href="/"
+                onClick={(e) => handleScrollToSection(e, "contact")}
+                className="text-[#cab797] text-base font-medium hover:text-surface transition-colors"
+              >
+                Contact
               </Link>
             </nav>
           </motion.div>
@@ -224,12 +231,50 @@ export default function Footer() {
           </motion.div>
         </div>
 
+        {/* FAQ Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="border-t border-[#cab797]/30 pt-12 pb-8"
+        >
+          <h4 className="font-serif text-base text-surface mb-8">
+            Frequently Asked Questions
+          </h4>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* FAQ 1 */}
+            <div>
+              <h5 className="font-serif text-base text-surface mb-3">
+                Do I get a better rate if I book directly?
+              </h5>
+              <p className="text-[#cab797] text-base leading-6">
+                Yes. You will always receive the best available rate and
+                complimentary à la carte breakfast when booking directly through
+                our official website.
+              </p>
+            </div>
+
+            {/* FAQ 2 */}
+            <div>
+              <h5 className="font-serif text-base text-surface mb-3">
+                Is breakfast included?
+              </h5>
+              <p className="text-[#cab797] text-base leading-6">
+                Yes. Breakfast is included for all direct bookings. Guests
+                booking through OTA platforms may have different inclusions
+                depending on their rate plan.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Footer Bottom */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.6 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
           className="border-t border-[#cab797]/30 pt-8"
         >
           <p className="text-[#cab797] text-base text-center">

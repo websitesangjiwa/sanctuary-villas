@@ -29,22 +29,22 @@ export default function VillaList({ villas, totalGuests = 0 }: VillaListProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
+            className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
           >
-            <div className="flex flex-col sm:flex-row">
+            <div className="flex flex-col sm:flex-row gap-6 p-6">
               {/* Villa Image */}
               {villaImage ? (
-                <div className="relative w-full sm:w-64 h-48 shrink-0">
+                <div className="relative w-full sm:w-[261px] h-[160px] shrink-0 rounded-lg overflow-hidden">
                   <Image
                     src={villaImage}
                     alt={villa.name}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 640px) 100vw, 256px"
+                    sizes="(max-width: 640px) 100vw, 261px"
                   />
                 </div>
               ) : (
-                <div className="relative w-full sm:w-64 h-48 shrink-0 bg-primary/10 flex items-center justify-center">
+                <div className="relative w-full sm:w-[261px] h-[160px] shrink-0 bg-primary/10 flex items-center justify-center rounded-lg">
                   <svg
                     width="48"
                     height="48"
@@ -72,29 +72,33 @@ export default function VillaList({ villas, totalGuests = 0 }: VillaListProps) {
               )}
 
               {/* Villa Info */}
-              <div className="flex-1 p-6">
-                <h3 className="font-serif text-xl text-primary-dark mb-2">
-                  {villa.name}
-                </h3>
-                <p className="text-primary text-sm mb-3">
-                  {villa.maxGuests} Guests | {villa.bedrooms} Bedroom
-                  {villa.bedrooms > 1 ? "s" : ""} | {villa.bathrooms} Bathroom
-                  {villa.bathrooms > 1 ? "s" : ""}
-                </p>
-                {villa.description && (
-                  <p className="text-primary text-sm line-clamp-2">
-                    {villa.description}
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-serif text-xl lg:text-2xl text-primary-dark mb-2 tracking-wide">
+                    {villa.name}
+                  </h3>
+                  <p className="text-primary text-base mb-3">
+                    {villa.maxGuests} Guests | {villa.bedrooms} Bedroom
+                    {villa.bedrooms > 1 ? "s" : ""} | {villa.bathrooms} Bathroom
+                    {villa.bathrooms > 1 ? "s" : ""}
                   </p>
-                )}
+                  {villa.description && (
+                    <p className="text-primary-dark text-sm leading-relaxed line-clamp-2">
+                      {villa.description}
+                    </p>
+                  )}
+                </div>
                 {villa.price && (
-                  <p className="text-primary-dark text-lg font-medium mt-3">
-                    {villa.currency || "$"}
-                    {villa.price}
-                    <span className="text-sm font-normal text-primary">
-                      {" "}
-                      / night
-                    </span>
-                  </p>
+                  <div className="mt-4">
+                    <p className="text-primary-dark text-lg font-medium">
+                      {villa.currency || "$"}
+                      {villa.price}
+                      <span className="text-sm font-normal text-primary">
+                        {" "}
+                        / night
+                      </span>
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
