@@ -246,7 +246,7 @@ export default function Footer() {
             {/* FAQ 1 */}
             <div>
               <h5 className="font-serif text-base text-surface mb-3">
-                Do I get a better rate if I book directly?
+                Do I get the best rate when booking directly?
               </h5>
               <p className="text-[#cab797] text-base leading-6">
                 Yes. You will always receive the best available rate and
