@@ -1,16 +1,9 @@
 import { GuestyTokenResponse } from '@/types/guesty';
+import { unstable_cache } from 'next/cache';
 
 const GUESTY_TOKEN_URL = 'https://booking.guesty.com/oauth2/token';
 
-let cachedToken: string | null = null;
-let tokenExpiry: number | null = null;
-
-export async function getGuestyToken(): Promise<string> {
-  // Check if we have a valid cached token
-  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
-    return cachedToken;
-  }
-
+async function fetchGuestyToken(): Promise<string> {
   const clientId = process.env.GUESTY_CLIENT_ID;
   const clientSecret = process.env.GUESTY_CLIENT_SECRET;
 
@@ -23,7 +16,6 @@ export async function getGuestyToken(): Promise<string> {
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Cache-Control': 'no-cache',
     },
     body: new URLSearchParams({
       grant_type: 'client_credentials',
@@ -39,15 +31,12 @@ export async function getGuestyToken(): Promise<string> {
   }
 
   const data: GuestyTokenResponse = await response.json();
-
-  cachedToken = data.access_token;
-  // Cache for expires_in minus 1 minute buffer
-  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-
-  return cachedToken;
+  return data.access_token;
 }
 
-export function clearGuestyTokenCache(): void {
-  cachedToken = null;
-  tokenExpiry = null;
-}
+// Cache token for 1 hour (3600 seconds)
+export const getGuestyToken = unstable_cache(
+  fetchGuestyToken,
+  ['guesty-token'],
+  { revalidate: 3600 }
+);
