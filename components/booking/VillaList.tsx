@@ -27,8 +27,8 @@ export default function VillaList({
       <div className="space-y-6">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="animate-pulse bg-white rounded-lg p-6">
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="w-full sm:w-[261px] h-[160px] bg-gray-300 rounded-lg" />
+            <div className="flex flex-col xl:flex-row gap-6">
+              <div className="w-full xl:w-[261px] h-[160px] bg-gray-300 rounded-lg" />
               <div className="flex-1 space-y-3">
                 <div className="h-6 bg-gray-300 rounded w-3/4" />
                 <div className="h-4 bg-gray-200 rounded w-1/2" />
@@ -71,10 +71,10 @@ export default function VillaList({
             transition={{ duration: 0.4, delay: index * 0.1 }}
             className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
           >
-            <div className="flex flex-col sm:flex-row gap-6 p-6">
+            <div className="flex flex-col xl:flex-row gap-6 p-6">
               {/* Listing Image */}
               {listingImage ? (
-                <div className="relative w-full sm:w-[261px] h-[160px] shrink-0 rounded-lg overflow-hidden">
+                <div className="relative w-full xl:w-[261px] h-[160px] shrink-0 rounded-lg overflow-hidden">
                   <Image
                     src={listingImage}
                     alt={listing.title}
@@ -86,7 +86,7 @@ export default function VillaList({
                   />
                 </div>
               ) : (
-                <div className="relative w-full sm:w-[261px] h-[160px] shrink-0 bg-primary/10 flex items-center justify-center rounded-lg">
+                <div className="relative w-full xl:w-[261px] h-[160px] shrink-0 bg-primary/10 flex items-center justify-center rounded-lg">
                   <svg
                     width="48"
                     height="48"
