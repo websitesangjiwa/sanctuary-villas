@@ -2,45 +2,87 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { BoomListing } from "@/types/booking";
+import { GuestyListing } from "@/types/guesty";
 
 interface VillaListProps {
-  villas: BoomListing[];
+  listings: GuestyListing[];
   totalGuests?: number;
+  isLoading?: boolean;
+  onBook?: (listingId: string) => void;
 }
 
-export default function VillaList({ villas, totalGuests = 0 }: VillaListProps) {
-  // Filter villas that can accommodate the number of guests
-  const availableVillas = villas.filter(
-    (villa) => !totalGuests || villa.maxGuests >= totalGuests
+export default function VillaList({
+  listings,
+  totalGuests = 0,
+  isLoading = false,
+  onBook,
+}: VillaListProps) {
+  // Filter listings that can accommodate the number of guests
+  const availableListings = listings.filter(
+    (listing) => !totalGuests || listing.accommodates >= totalGuests
   );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="animate-pulse bg-white rounded-lg p-6">
+            <div className="flex flex-col sm:flex-row gap-6">
+              <div className="w-full sm:w-[261px] h-[160px] bg-gray-300 rounded-lg" />
+              <div className="flex-1 space-y-3">
+                <div className="h-6 bg-gray-300 rounded w-3/4" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+                <div className="h-4 bg-gray-200 rounded w-full" />
+                <div className="h-6 bg-gray-300 rounded w-24 mt-4" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {availableVillas.map((villa, index) => {
+      {availableListings.map((listing, index) => {
         // Get the first image from the array or use a fallback
-        const villaImage =
-          villa.image ||
-          (villa.images && villa.images.length > 0 ? villa.images[0] : null);
+        const listingImage =
+          listing.pictures?.[0]?.thumbnail ||
+          listing.pictures?.[0]?.regular ||
+          listing.pictures?.[0]?.large ||
+          null;
+
+        const price = listing.prices?.basePrice || 0;
+        const currency = listing.prices?.currency || "USD";
+
+        const formatPrice = (amount: number, curr: string) => {
+          return new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: curr,
+            minimumFractionDigits: 0,
+          }).format(amount);
+        };
 
         return (
           <motion.div
-            key={villa.id}
+            key={listing._id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
           >
             <div className="flex flex-col sm:flex-row gap-6 p-6">
-              {/* Villa Image */}
-              {villaImage ? (
+              {/* Listing Image */}
+              {listingImage ? (
                 <div className="relative w-full sm:w-[261px] h-[160px] shrink-0 rounded-lg overflow-hidden">
                   <Image
-                    src={villaImage}
-                    alt={villa.name}
+                    src={listingImage}
+                    alt={listing.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 100vw, 261px"
+                    loading="lazy"
+                    unoptimized
                   />
                 </div>
               ) : (
@@ -71,42 +113,66 @@ export default function VillaList({ villas, totalGuests = 0 }: VillaListProps) {
                 </div>
               )}
 
-              {/* Villa Info */}
+              {/* Listing Info */}
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   <h3 className="font-serif text-xl lg:text-2xl text-primary-dark mb-2 tracking-wide">
-                    {villa.name}
+                    {listing.title}
                   </h3>
                   <p className="text-primary text-base mb-3">
-                    {villa.maxGuests} Guests | {villa.bedrooms} Bedroom
-                    {villa.bedrooms > 1 ? "s" : ""} | {villa.bathrooms} Bathroom
-                    {villa.bathrooms > 1 ? "s" : ""}
+                    {listing.accommodates} Guests | {listing.bedrooms} Bedroom
+                    {listing.bedrooms > 1 ? "s" : ""} | {listing.bathrooms}{" "}
+                    Bathroom
+                    {listing.bathrooms > 1 ? "s" : ""}
                   </p>
-                  {villa.description && (
+                  {listing.publicDescription?.summary && (
                     <p className="text-primary-dark text-sm leading-relaxed line-clamp-2">
-                      {villa.description}
+                      {listing.publicDescription.summary}
                     </p>
                   )}
                 </div>
-                {villa.price && (
-                  <div className="mt-4">
+                <div className="mt-4 flex items-center justify-between">
+                  {price > 0 && (
                     <p className="text-primary-dark text-lg font-medium">
-                      {villa.currency || "$"}
-                      {villa.price}
+                      {formatPrice(price, currency)}
                       <span className="text-sm font-normal text-primary">
                         {" "}
                         / night
                       </span>
                     </p>
-                  </div>
-                )}
+                  )}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onBook?.(listing._id)}
+                    className="bg-primary text-white text-sm font-medium py-2 px-6 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+                    aria-label={`Book ${listing.title}`}
+                  >
+                    <span>Book Now</span>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 12L10 8L6 4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </motion.button>
+                </div>
               </div>
             </div>
           </motion.div>
         );
       })}
 
-      {availableVillas.length === 0 && (
+      {availableListings.length === 0 && !isLoading && (
         <div className="bg-white rounded-lg shadow-lg p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">

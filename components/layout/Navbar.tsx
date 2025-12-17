@@ -14,11 +14,12 @@ export default function Navbar() {
     { name: "Home", href: "/", scrollTo: null },
     { name: "Villas", href: "/", scrollTo: "villa-styles" },
     { name: "About Us", href: "/", scrollTo: "gallery" },
-    { name: "Book Now", href: "/", scrollTo: "booking" },
+    { name: "Book Now", href: "/book", scrollTo: null },
   ];
 
-  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, scrollTo: string | null) => {
-    if (pathname === "/") {
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, scrollTo: string | null, href: string) => {
+    // Only handle scroll behavior for same-page navigation
+    if (pathname === "/" && (scrollTo || href === "/")) {
       e.preventDefault();
       setIsMenuOpen(false);
 
@@ -43,7 +44,10 @@ export default function Navbar() {
   };
 
   const isActiveLink = (link: typeof navLinks[0]) => {
-    return pathname === "/" && (link.scrollTo === null || link.name === "Home");
+    if (link.href !== "/") {
+      return pathname === link.href;
+    }
+    return pathname === "/" && link.name === "Home";
   };
 
   return (
@@ -67,7 +71,7 @@ export default function Navbar() {
               <Link
                 key={link.name}
                 href={link.href}
-                onClick={(e) => handleScroll(e, link.scrollTo)}
+                onClick={(e) => handleScroll(e, link.scrollTo, link.href)}
                 className={`text-base transition-colors ${
                   isActiveLink(link)
                     ? "text-surface"
@@ -142,7 +146,7 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  onClick={(e) => handleScroll(e, link.scrollTo)}
+                  onClick={(e) => handleScroll(e, link.scrollTo, link.href)}
                   className={`text-base transition-colors py-2 ${
                     isActiveLink(link)
                       ? "text-surface"

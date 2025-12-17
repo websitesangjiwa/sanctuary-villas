@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import DatePickerPopup from "@/components/ui/DatePickerPopup";
 
 export default function BookingSection() {
+  const router = useRouter();
   const [range, setRange] = useState<DateRange | undefined>();
   const [adults, setAdults] = useState(1);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -52,20 +54,15 @@ export default function BookingSection() {
     const checkIn = format(range.from, "yyyy-MM-dd");
     const checkOut = format(range.to, "yyyy-MM-dd");
 
-    // Build URL with parameters
+    // Build URL with parameters for our properties page
     const params = new URLSearchParams({
-      check_in: checkIn,
-      check_out: checkOut,
-      city: "Kecamatan Ubud",
-      region: "",
-      adults: adults.toString(),
-      children: "0",
+      checkIn,
+      checkOut,
+      guests: adults.toString(),
     });
 
-    const url = `https://sanctuayvillas.bookingsboom.com/listings?${params.toString()}`;
-
-    // Open in new tab
-    window.open(url, "_blank");
+    // Navigate to properties page with search params
+    router.push(`/properties?${params.toString()}`);
   };
 
   return (

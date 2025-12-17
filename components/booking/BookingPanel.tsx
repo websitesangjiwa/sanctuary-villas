@@ -11,12 +11,16 @@ interface BookingPanelProps {
   onDateChange?: (range: DateRange | undefined) => void;
   onGuestsChange?: (adults: number, children: number) => void;
   onFindDate?: () => void;
+  onSearch?: (checkIn: string, checkOut: string, guests: number) => void;
+  isLoading?: boolean;
 }
 
 export default function BookingPanel({
   onDateChange,
   onGuestsChange,
   onFindDate,
+  onSearch,
+  isLoading = false,
 }: BookingPanelProps) {
   const [range, setRange] = useState<DateRange | undefined>();
   const [adults, setAdults] = useState(1);
@@ -273,12 +277,44 @@ export default function BookingPanel({
 
       {/* Find Date Button */}
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onFindDate}
-        className="w-full bg-primary text-surface text-sm font-medium leading-5 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+        whileHover={!range?.from || !range?.to || isLoading ? {} : { scale: 1.02 }}
+        whileTap={!range?.from || !range?.to || isLoading ? {} : { scale: 0.98 }}
+        onClick={() => {
+          if (onFindDate) {
+            onFindDate();
+          }
+          if (onSearch && range?.from && range?.to) {
+            const checkIn = format(range.from, "yyyy-MM-dd");
+            const checkOut = format(range.to, "yyyy-MM-dd");
+            onSearch(checkIn, checkOut, adults + children);
+          }
+        }}
+        disabled={!range?.from || !range?.to || isLoading}
+        className="w-full bg-primary text-surface text-sm font-medium leading-5 py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        Find Date
+        {isLoading ? (
+          <>
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Searching...
+          </>
+        ) : (
+          "Find Date"
+        )}
       </motion.button>
     </div>
   );

@@ -82,51 +82,33 @@
 .booking-calendar .rdp-nav-button {
   width: 28px;
   height: 28px;
-  padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: transparent;
-  color: #8b6630;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #8b6630;
+  cursor: pointer;
   transition: all 0.2s;
-  opacity: 0.5;
-  flex-shrink: 0;
 }
 
 .booking-calendar .rdp-nav-button:hover {
   background-color: rgba(139, 102, 48, 0.1);
-  opacity: 1;
 }
 
 .booking-calendar .rdp-nav-button:disabled {
-  opacity: 0.2;
+  opacity: 0.3;
   cursor: not-allowed;
-}
-
-.booking-calendar .rdp-nav-button svg {
-  width: 16px;
-  height: 16px;
 }
 
 .booking-calendar .rdp-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 0;
 }
 
 .booking-calendar .rdp-head {
-  border-bottom: 1px solid #eae7d9;
-}
-
-.booking-calendar .rdp-weekday {
-  padding: 0.5rem 0;
-  font-size: 0.875rem;
-  font-weight: 400;
-  text-align: center;
-  color: #643c15;
+  border-bottom: none;
 }
 
 .booking-calendar .rdp-tbody {
@@ -134,71 +116,19 @@
 }
 
 .booking-calendar .rdp-week {
-  border: none;
+  height: 40px;
 }
 
 .booking-calendar .rdp-day {
+  text-align: center;
   padding: 0;
 }
 
 .booking-calendar .rdp-day-button {
-  width: 40px;
-  height: 40px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #643c15;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  border-radius: 50%;
+  font-size: 0.875rem;
 }
 
-.booking-calendar .rdp-day-button:hover:not(.rdp-disabled) {
-  background-color: rgba(139, 102, 48, 0.1);
-  border-radius: 50%;
-}
-
-.booking-calendar .rdp-day-button.rdp-selected {
-  background-color: #8b6630;
-  color: #eae7d9;
-  font-weight: 500;
-  border-radius: 50%;
-}
-
-.booking-calendar .rdp-day-button.rdp-range_start {
-  border-radius: 50%;
-}
-
-.booking-calendar .rdp-day-button.rdp-range_end {
-  border-radius: 50%;
-}
-
-.booking-calendar .rdp-day-button.rdp-range_middle {
-  background-color: rgba(139, 102, 48, 0.2);
-  color: #643c15;
-  border-radius: 50%;
-}
-
-.booking-calendar .rdp-day-button.rdp-disabled {
-  color: #cbd5e0;
-  cursor: not-allowed;
-}
-
-.booking-calendar .rdp-day-button.rdp-disabled:hover {
-  background-color: transparent;
-}
-
-.booking-calendar .rdp-day-button.rdp-outside {
-  color: #a0aec0;
-}
-
-.booking-calendar .rdp-day-button.rdp-today {
-  font-weight: 700;
-  border: 1px solid rgba(139, 102, 48, 0.3);
-  border-radius: 50%;
+/* Hide outside days */
+.booking-calendar .rdp-outside {
+  visibility: hidden;
 }
