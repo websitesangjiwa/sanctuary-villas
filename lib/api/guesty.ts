@@ -15,7 +15,7 @@ export async function getGuestyToken(): Promise<string> {
   const clientSecret = process.env.GUESTY_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error('Missing Guesty API credentials');
+    throw new Error(`Missing Guesty API credentials. GUESTY_CLIENT_ID: ${clientId ? 'set' : 'NOT SET'}, GUESTY_CLIENT_SECRET: ${clientSecret ? 'set' : 'NOT SET'}`);
   }
 
   const response = await fetch(GUESTY_TOKEN_URL, {
