@@ -146,9 +146,9 @@ export default function VillaList({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => onBook?.(listing._id)}
                     className="bg-primary text-white text-sm font-medium py-2 px-6 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
-                    aria-label={`Book ${listing.title}`}
+                    aria-label={`More info about ${listing.title}`}
                   >
-                    <span>Book Now</span>
+                    <span>More info</span>
                     <svg
                       width="16"
                       height="16"
