@@ -57,6 +57,7 @@ export default function VillaSlider({
                 fill
                 className="object-cover"
                 priority={slide.id === 1}
+                sizes="100vw"
               />
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                 <div className="text-center text-white px-8 max-w-4xl">

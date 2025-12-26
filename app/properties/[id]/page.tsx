@@ -554,7 +554,7 @@ export default function PropertyPage() {
                 fill
                 className="object-cover"
                 priority
-                unoptimized
+                sizes="100vw"
               />
             </div>
           )}
@@ -589,7 +589,8 @@ export default function PropertyPage() {
                         alt={`${listing.title} - Image ${index + 1}`}
                         fill
                         className="object-cover"
-                        unoptimized
+                        loading="lazy"
+                        sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 100px"
                       />
                     </button>
                   </SwiperSlide>

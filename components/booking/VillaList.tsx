@@ -95,7 +95,6 @@ export default function VillaList({
                     className="object-cover"
                     sizes="(max-width: 640px) 100vw, 261px"
                     loading="lazy"
-                    unoptimized
                   />
                 </div>
               ) : (
