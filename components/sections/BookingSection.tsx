@@ -61,8 +61,8 @@ export default function BookingSection() {
       guests: adults.toString(),
     });
 
-    // Navigate to properties page with search params
-    router.push(`/properties?${params.toString()}`);
+    // Navigate to book page with search params
+    router.push(`/book?${params.toString()}`);
   };
 
   return (

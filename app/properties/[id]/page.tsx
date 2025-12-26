@@ -597,7 +597,6 @@ export default function PropertyPage() {
         >
           <PropertyBookingCard
             listingId={id}
-            listingTitle={listing.title}
             maxGuests={listing.accommodates}
             minNights={listing.terms?.minNights}
             initialCheckIn={checkIn}
@@ -853,7 +852,6 @@ export default function PropertyPage() {
             <div className="sticky top-28">
               <PropertyBookingCard
                 listingId={id}
-                listingTitle={listing.title}
                 maxGuests={listing.accommodates}
                 minNights={listing.terms?.minNights}
                 initialCheckIn={checkIn}

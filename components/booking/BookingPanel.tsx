@@ -13,6 +13,9 @@ interface BookingPanelProps {
   onFindDate?: () => void;
   onSearch?: (checkIn: string, checkOut: string, guests: number) => void;
   isLoading?: boolean;
+  initialCheckIn?: string;
+  initialCheckOut?: string;
+  initialGuests?: number;
 }
 
 export default function BookingPanel({
@@ -21,9 +24,20 @@ export default function BookingPanel({
   onFindDate,
   onSearch,
   isLoading = false,
+  initialCheckIn,
+  initialCheckOut,
+  initialGuests,
 }: BookingPanelProps) {
-  const [range, setRange] = useState<DateRange | undefined>();
-  const [adults, setAdults] = useState(1);
+  const [range, setRange] = useState<DateRange | undefined>(() => {
+    if (initialCheckIn && initialCheckOut) {
+      return {
+        from: new Date(initialCheckIn),
+        to: new Date(initialCheckOut),
+      };
+    }
+    return undefined;
+  });
+  const [adults, setAdults] = useState(initialGuests || 1);
   const [children, setChildren] = useState(0);
 
   const handleSelect = (newRange: DateRange | undefined) => {

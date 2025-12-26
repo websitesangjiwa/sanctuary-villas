@@ -1,29 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import BookingPanel from "@/components/booking/BookingPanel";
 import VillaList from "@/components/booking/VillaList";
 import { GuestyListing } from "@/types/guesty";
 
-export default function BookPage() {
+function BookPageContent() {
+  const searchParams = useSearchParams();
+  const urlCheckIn = searchParams.get("checkIn");
+  const urlCheckOut = searchParams.get("checkOut");
+  const urlGuests = searchParams.get("guests");
+
   const [listings, setListings] = useState<GuestyListing[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [searchParams, setSearchParams] = useState<{
+  const [currentSearchParams, setCurrentSearchParams] = useState<{
     checkIn: string;
     checkOut: string;
     guests: number;
   } | null>(null);
 
-  const handleSearch = async (
+  const handleSearch = useCallback(async (
     checkIn: string,
     checkOut: string,
     guests: number
   ) => {
     setIsLoading(true);
     setHasSearched(true);
-    setSearchParams({ checkIn, checkOut, guests });
+    setCurrentSearchParams({ checkIn, checkOut, guests });
 
     try {
       const params = new URLSearchParams({
@@ -40,7 +46,14 @@ export default function BookPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Auto-trigger search if URL params are present
+  useEffect(() => {
+    if (urlCheckIn && urlCheckOut && !hasSearched) {
+      handleSearch(urlCheckIn, urlCheckOut, parseInt(urlGuests || "1"));
+    }
+  }, [urlCheckIn, urlCheckOut, urlGuests, hasSearched, handleSearch]);
 
   return (
     <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
@@ -64,7 +77,13 @@ export default function BookPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="w-full lg:w-[417px] shrink-0"
           >
-            <BookingPanel onSearch={handleSearch} isLoading={isLoading} />
+            <BookingPanel
+              onSearch={handleSearch}
+              isLoading={isLoading}
+              initialCheckIn={urlCheckIn || undefined}
+              initialCheckOut={urlCheckOut || undefined}
+              initialGuests={urlGuests ? parseInt(urlGuests) : undefined}
+            />
           </motion.div>
 
           {/* Right Column - Villa List */}
@@ -107,14 +126,48 @@ export default function BookPage() {
             ) : (
               <VillaList
                 listings={listings}
-                totalGuests={searchParams?.guests}
+                totalGuests={currentSearchParams?.guests}
                 isLoading={isLoading}
-                searchParams={searchParams}
+                searchParams={currentSearchParams}
               />
             )}
           </motion.div>
         </div>
       </div>
     </main>
+  );
+}
+
+function BookPageLoading() {
+  return (
+    <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
+      <div className="container mx-auto px-8 md:px-8 lg:px-14">
+        <div className="font-serif text-3xl lg:text-5xl text-center text-primary-dark tracking-[4px] mb-12 lg:mb-16">
+          Book Your Stay
+        </div>
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="w-full lg:w-[417px] shrink-0">
+            <div className="bg-[#fffdf3] rounded-lg shadow-lg p-8 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-6" />
+              <div className="h-64 bg-gray-200 rounded mb-6" />
+              <div className="h-10 bg-gray-200 rounded" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-lg p-12 h-full flex items-center justify-center">
+              <div className="animate-pulse text-primary">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<BookPageLoading />}>
+      <BookPageContent />
+    </Suspense>
   );
 }
