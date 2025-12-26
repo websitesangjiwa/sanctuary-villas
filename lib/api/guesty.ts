@@ -15,10 +15,20 @@ const GUESTY_CONFIG = {
 
 // Redis client for token caching (persists across serverless invocations)
 // Uses Vercel KV environment variable names
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
-});
+// Returns null if env vars are not configured (fallback to direct API calls)
+function createRedisClient(): Redis | null {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) {
+    console.warn('Redis env vars not configured (KV_REST_API_URL, KV_REST_API_TOKEN). Token caching disabled.');
+    return null;
+  }
+
+  return new Redis({ url, token });
+}
+
+const redis = createRedisClient();
 const TOKEN_KEY = 'guesty_token';
 
 // Helper for delay
@@ -72,36 +82,45 @@ async function fetchGuestyToken(retries = 3): Promise<string> {
 
 // Cached token getter with Redis storage (works across serverless invocations)
 export async function getGuestyToken(): Promise<string> {
-  // Try to get cached token from Redis
-  try {
-    const cached = await redis.get<string>(TOKEN_KEY);
-    if (cached) {
-      return cached;
+  // Try to get cached token from Redis (if available)
+  if (redis) {
+    try {
+      const cached = await redis.get<string>(TOKEN_KEY);
+      if (cached) {
+        console.log('Token retrieved from Redis cache');
+        return cached;
+      }
+    } catch (error) {
+      console.error('Redis get error, fetching new token:', error);
     }
-  } catch (error) {
-    console.error('Redis get error, fetching new token:', error);
   }
 
-  // Fetch new token
+  // Fetch new token from Guesty API
+  console.log('Fetching new token from Guesty API...');
   const token = await fetchGuestyToken();
 
   // Cache in Redis with TTL using NX to prevent race conditions
-  try {
-    const setResult = await redis.set(TOKEN_KEY, token, {
-      ex: GUESTY_CONFIG.cache.tokenTTL,
-      nx: true // Only set if key doesn't exist (prevents race condition)
-    });
+  if (redis) {
+    try {
+      const setResult = await redis.set(TOKEN_KEY, token, {
+        ex: GUESTY_CONFIG.cache.tokenTTL,
+        nx: true // Only set if key doesn't exist (prevents race condition)
+      });
 
-    // If another process already set the token, use that one instead
-    if (setResult === null) {
-      const existingToken = await redis.get<string>(TOKEN_KEY);
-      if (existingToken) {
-        return existingToken;
+      if (setResult === 'OK') {
+        console.log('Token cached in Redis with TTL:', GUESTY_CONFIG.cache.tokenTTL, 'seconds');
+      } else {
+        // Another process already set the token, get that one
+        const existingToken = await redis.get<string>(TOKEN_KEY);
+        if (existingToken) {
+          console.log('Using token from another process');
+          return existingToken;
+        }
       }
+    } catch (error) {
+      console.error('Redis set error:', error);
+      // Token is still valid even if Redis fails
     }
-  } catch (error) {
-    console.error('Redis set error:', error);
-    // Token is still valid even if Redis fails
   }
 
   return token;
