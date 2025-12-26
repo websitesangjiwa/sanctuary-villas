@@ -1,20 +1,33 @@
-import { GuestyTokenResponse } from '@/types/guesty';
+import { GuestyTokenResponse, GuestyListing, GuestyListingsResponse } from '@/types/guesty';
 import { unstable_cache } from 'next/cache';
 
-const GUESTY_TOKEN_URL = 'https://booking.guesty.com/oauth2/token';
+// Configuration
+const GUESTY_CONFIG = {
+  tokenUrl: 'https://booking.guesty.com/oauth2/token',
+  apiUrl: 'https://booking.guesty.com/api',
+  bookingUrl: 'https://sanctuaryvillas.guestybookings.com',
+  cache: {
+    tokenRevalidate: 3600, // 1 hour
+    listingsRevalidate: 60, // 1 minute
+    listingRevalidate: 300, // 5 minutes
+  },
+} as const;
 
+// Token management
 async function fetchGuestyToken(): Promise<string> {
   const clientId = process.env.GUESTY_CLIENT_ID;
   const clientSecret = process.env.GUESTY_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error(`Missing Guesty API credentials. GUESTY_CLIENT_ID: ${clientId ? 'set' : 'NOT SET'}, GUESTY_CLIENT_SECRET: ${clientSecret ? 'set' : 'NOT SET'}`);
+    throw new Error(
+      `Missing Guesty API credentials. GUESTY_CLIENT_ID: ${clientId ? 'set' : 'NOT SET'}, GUESTY_CLIENT_SECRET: ${clientSecret ? 'set' : 'NOT SET'}`
+    );
   }
 
-  const response = await fetch(GUESTY_TOKEN_URL, {
+  const response = await fetch(GUESTY_CONFIG.tokenUrl, {
     method: 'POST',
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
@@ -34,9 +47,70 @@ async function fetchGuestyToken(): Promise<string> {
   return data.access_token;
 }
 
-// Cache token for 1 hour (3600 seconds)
+// Cached token getter
 export const getGuestyToken = unstable_cache(
   fetchGuestyToken,
   ['guesty-token'],
-  { revalidate: 3600 }
+  { revalidate: GUESTY_CONFIG.cache.tokenRevalidate }
 );
+
+// API request helper
+async function guestyFetch<T>(
+  endpoint: string,
+  options: { revalidate?: number } = {}
+): Promise<T> {
+  const token = await getGuestyToken();
+
+  const response = await fetch(`${GUESTY_CONFIG.apiUrl}${endpoint}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+    next: { revalidate: options.revalidate ?? GUESTY_CONFIG.cache.listingsRevalidate },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Guesty API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
+// Listings API
+export interface SearchListingsParams {
+  checkIn: string;
+  checkOut: string;
+  guests?: number;
+}
+
+export async function searchListings(params: SearchListingsParams): Promise<GuestyListingsResponse> {
+  const queryParams = new URLSearchParams({
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    minOccupancy: (params.guests ?? 1).toString(),
+  });
+
+  return guestyFetch<GuestyListingsResponse>(
+    `/listings?${queryParams.toString()}`,
+    { revalidate: GUESTY_CONFIG.cache.listingsRevalidate }
+  );
+}
+
+export async function getListingById(id: string): Promise<GuestyListing> {
+  return guestyFetch<GuestyListing>(
+    `/listings/${id}`,
+    { revalidate: GUESTY_CONFIG.cache.listingRevalidate }
+  );
+}
+
+// Booking URL helper
+export function getBookingUrl(listingId: string, params: SearchListingsParams): string {
+  const queryParams = new URLSearchParams({
+    minOccupancy: (params.guests ?? 1).toString(),
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+  });
+
+  return `${GUESTY_CONFIG.bookingUrl}/en/properties/${listingId}?${queryParams.toString()}`;
+}

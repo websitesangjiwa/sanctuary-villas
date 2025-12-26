@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGuestyToken } from '@/lib/api/guesty';
-
-const GUESTY_API_URL = 'https://booking.guesty.com/api/listings';
+import { searchListings } from '@/lib/api/guesty';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -17,39 +15,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const token = await getGuestyToken();
-
-    const guestyParams = new URLSearchParams({
+    const data = await searchListings({
       checkIn,
       checkOut,
-      minOccupancy: guests,
+      guests: parseInt(guests, 10),
     });
 
-    const response = await fetch(`${GUESTY_API_URL}?${guestyParams.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      },
-      next: { revalidate: 60 }, // Cache for 1 minute
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Guesty API error:', response.status, errorText);
-      return NextResponse.json(
-        { error: 'Failed to fetch listings from Guesty' },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
     console.error('Guesty listings error:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch listings',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
