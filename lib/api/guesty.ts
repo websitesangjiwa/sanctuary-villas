@@ -21,8 +21,11 @@ const redis = new Redis({
 });
 const TOKEN_KEY = 'guesty_token';
 
-// Token management
-async function fetchGuestyToken(): Promise<string> {
+// Helper for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Token management with retry logic for rate limiting
+async function fetchGuestyToken(retries = 3): Promise<string> {
   const clientId = process.env.GUESTY_CLIENT_ID;
   const clientSecret = process.env.GUESTY_CLIENT_SECRET;
 
@@ -32,27 +35,39 @@ async function fetchGuestyToken(): Promise<string> {
     );
   }
 
-  const response = await fetch(GUESTY_CONFIG.tokenUrl, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'booking_engine:api',
-      client_id: clientId,
-      client_secret: clientSecret,
-    }),
-  });
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const response = await fetch(GUESTY_CONFIG.tokenUrl, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: 'booking_engine:api',
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
 
-  if (!response.ok) {
+    if (response.ok) {
+      const data: GuestyTokenResponse = await response.json();
+      return data.access_token;
+    }
+
+    // Handle rate limiting with exponential backoff
+    if (response.status === 429 && attempt < retries - 1) {
+      const waitTime = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+      console.log(`Rate limited (429), waiting ${waitTime}ms before retry ${attempt + 1}/${retries - 1}`);
+      await delay(waitTime);
+      continue;
+    }
+
     const errorText = await response.text();
     throw new Error(`Failed to get Guesty token: ${response.status} - ${errorText}`);
   }
 
-  const data: GuestyTokenResponse = await response.json();
-  return data.access_token;
+  throw new Error('Failed to get Guesty token after all retries');
 }
 
 // Cached token getter with Redis storage (works across serverless invocations)
