@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { GuestyListing } from "@/types/guesty";
 
@@ -8,15 +9,27 @@ interface VillaListProps {
   listings: GuestyListing[];
   totalGuests?: number;
   isLoading?: boolean;
-  onBook?: (listingId: string) => void;
+  searchParams?: {
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+  } | null;
 }
 
 export default function VillaList({
   listings,
   totalGuests = 0,
   isLoading = false,
-  onBook,
+  searchParams,
 }: VillaListProps) {
+  const router = useRouter();
+
+  const handleMoreInfo = (listingId: string) => {
+    if (!searchParams) return;
+
+    const url = `/properties/${listingId}?minOccupancy=${searchParams.guests}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}`;
+    router.push(url);
+  };
   // Filter listings that can accommodate the number of guests
   const availableListings = listings.filter(
     (listing) => !totalGuests || listing.accommodates >= totalGuests
@@ -144,7 +157,7 @@ export default function VillaList({
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => onBook?.(listing._id)}
+                    onClick={() => handleMoreInfo(listing._id)}
                     className="bg-primary text-white text-sm font-medium py-2 px-6 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
                     aria-label={`More info about ${listing.title}`}
                   >

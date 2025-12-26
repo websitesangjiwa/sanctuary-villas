@@ -42,14 +42,6 @@ export default function BookPage() {
     }
   };
 
-  const handleBook = (listingId: string) => {
-    if (!searchParams) return;
-
-    const bookingUrl = `https://sanctuaryvillas.guestybookings.com/en/properties/${listingId}?minOccupancy=${searchParams.guests}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}`;
-
-    window.open(bookingUrl, "_blank");
-  };
-
   return (
     <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
       <div className="container mx-auto px-8 md:px-8 lg:px-14">
@@ -117,7 +109,7 @@ export default function BookPage() {
                 listings={listings}
                 totalGuests={searchParams?.guests}
                 isLoading={isLoading}
-                onBook={handleBook}
+                searchParams={searchParams}
               />
             )}
           </motion.div>
