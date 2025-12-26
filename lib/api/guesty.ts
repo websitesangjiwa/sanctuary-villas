@@ -1,5 +1,5 @@
 import { GuestyTokenResponse, GuestyListing, GuestyListingsResponse, GuestyQuote, GuestyQuoteRequest } from '@/types/guesty';
-import { unstable_cache } from 'next/cache';
+import { Redis } from '@upstash/redis';
 
 // Configuration
 const GUESTY_CONFIG = {
@@ -7,11 +7,19 @@ const GUESTY_CONFIG = {
   apiUrl: 'https://booking.guesty.com/api',
   bookingUrl: 'https://sanctuaryvillas.guestybookings.com',
   cache: {
-    tokenRevalidate: 3600, // 1 hour
+    tokenTTL: 3500, // ~58 minutes in seconds (token expires in 1 hour)
     listingsRevalidate: 60, // 1 minute
     listingRevalidate: 300, // 5 minutes
   },
 } as const;
+
+// Redis client for token caching (persists across serverless invocations)
+// Uses Vercel KV environment variable names
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
+});
+const TOKEN_KEY = 'guesty_token';
 
 // Token management
 async function fetchGuestyToken(): Promise<string> {
@@ -47,12 +55,42 @@ async function fetchGuestyToken(): Promise<string> {
   return data.access_token;
 }
 
-// Cached token getter
-export const getGuestyToken = unstable_cache(
-  fetchGuestyToken,
-  ['guesty-token'],
-  { revalidate: GUESTY_CONFIG.cache.tokenRevalidate }
-);
+// Cached token getter with Redis storage (works across serverless invocations)
+export async function getGuestyToken(): Promise<string> {
+  // Try to get cached token from Redis
+  try {
+    const cached = await redis.get<string>(TOKEN_KEY);
+    if (cached) {
+      return cached;
+    }
+  } catch (error) {
+    console.error('Redis get error, fetching new token:', error);
+  }
+
+  // Fetch new token
+  const token = await fetchGuestyToken();
+
+  // Cache in Redis with TTL using NX to prevent race conditions
+  try {
+    const setResult = await redis.set(TOKEN_KEY, token, {
+      ex: GUESTY_CONFIG.cache.tokenTTL,
+      nx: true // Only set if key doesn't exist (prevents race condition)
+    });
+
+    // If another process already set the token, use that one instead
+    if (setResult === null) {
+      const existingToken = await redis.get<string>(TOKEN_KEY);
+      if (existingToken) {
+        return existingToken;
+      }
+    }
+  } catch (error) {
+    console.error('Redis set error:', error);
+    // Token is still valid even if Redis fails
+  }
+
+  return token;
+}
 
 // API request helper
 async function guestyFetch<T>(
