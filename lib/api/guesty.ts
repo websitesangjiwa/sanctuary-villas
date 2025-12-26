@@ -1,4 +1,4 @@
-import { GuestyTokenResponse, GuestyListing, GuestyListingsResponse } from '@/types/guesty';
+import { GuestyTokenResponse, GuestyListing, GuestyListingsResponse, GuestyQuote, GuestyQuoteRequest } from '@/types/guesty';
 import { unstable_cache } from 'next/cache';
 
 // Configuration
@@ -113,4 +113,135 @@ export function getBookingUrl(listingId: string, params: SearchListingsParams): 
   });
 
   return `${GUESTY_CONFIG.bookingUrl}/en/properties/${listingId}?${queryParams.toString()}`;
+}
+
+// Checkout URL helper
+export function getCheckoutUrl(listingId: string, params: SearchListingsParams): string {
+  const queryParams = new URLSearchParams({
+    minOccupancy: (params.guests ?? 1).toString(),
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+  });
+
+  return `${GUESTY_CONFIG.bookingUrl}/en/properties/${listingId}/checkout?${queryParams.toString()}`;
+}
+
+// POST request helper
+async function guestyPost<T>(
+  endpoint: string,
+  body: object
+): Promise<T> {
+  const token = await getGuestyToken();
+
+  const response = await fetch(`${GUESTY_CONFIG.apiUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Guesty API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
+
+// Guesty Quote API response type (matches actual API response structure)
+interface GuestyQuoteInvoiceItem {
+  title: string;
+  amount: number;
+  currency: string;
+  type: string;
+}
+
+interface GuestyQuoteMoney {
+  _id: string;
+  currency: string;
+  fareAccommodation: number;
+  fareAccommodationAdjusted: number;
+  fareCleaning: number;
+  totalFees: number;
+  subTotalPrice: number;
+  hostPayout: number;
+  totalTaxes: number;
+  invoiceItems: GuestyQuoteInvoiceItem[];
+}
+
+interface GuestyQuoteDay {
+  date: string;
+  currency: string;
+  price: number;
+  basePrice: number;
+}
+
+interface GuestyQuoteRatePlanWrapper {
+  ratePlan: {
+    _id: string;
+    name: string;
+    money: GuestyQuoteMoney;
+  };
+  days: GuestyQuoteDay[];
+}
+
+interface GuestyQuoteRawResponse {
+  _id: string;
+  rates: {
+    ratePlans: GuestyQuoteRatePlanWrapper[];
+  };
+}
+
+// Quote API
+export async function getQuote(params: GuestyQuoteRequest): Promise<GuestyQuote> {
+  const response = await guestyPost<GuestyQuoteRawResponse>('/reservations/quotes', {
+    listingId: params.listingId,
+    checkInDateLocalized: params.checkIn,
+    checkOutDateLocalized: params.checkOut,
+    guestsCount: params.guests,
+  });
+
+  // Extract data from: rates.ratePlans[0].ratePlan.money
+  const ratePlanWrapper = response.rates?.ratePlans?.[0];
+  if (!ratePlanWrapper) {
+    throw new Error('No rate plan available for these dates');
+  }
+
+  const money = ratePlanWrapper.ratePlan?.money;
+  const invoiceItems = money?.invoiceItems || [];
+  const nights = ratePlanWrapper.days?.length || 0;
+
+  // Transform invoice items to fees and taxes
+  const fees = invoiceItems
+    .filter(item => item.type !== 'ACCOMMODATION_FARE' && item.type !== 'TAX')
+    .map(item => ({
+      name: item.title,
+      amount: item.amount,
+      type: item.type,
+    }));
+
+  const taxes = invoiceItems
+    .filter(item => item.type === 'TAX')
+    .map(item => ({
+      name: item.title,
+      amount: item.amount,
+      type: item.type,
+    }));
+
+  return {
+    _id: response._id,
+    listingId: params.listingId,
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    guests: params.guests,
+    nights,
+    currency: money?.currency || 'USD',
+    accommodationFare: money?.fareAccommodation || 0,
+    fees,
+    taxes,
+    totalPrice: money?.subTotalPrice || 0,
+  };
 }

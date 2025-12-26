@@ -83,3 +83,31 @@ export interface GuestySearchParams {
   guests?: number;
   minOccupancy?: number;
 }
+
+// Quote types
+export interface GuestyQuoteFee {
+  name: string;
+  amount: number;
+  type?: string;
+}
+
+export interface GuestyQuote {
+  _id: string;
+  listingId: string;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  nights: number;
+  currency: string;
+  accommodationFare: number;
+  fees: GuestyQuoteFee[];
+  taxes?: GuestyQuoteFee[];
+  totalPrice: number;
+}
+
+export interface GuestyQuoteRequest {
+  listingId: string;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+}

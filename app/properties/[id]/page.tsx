@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, FreeMode } from "swiper/modules";
 import { GuestyListing } from "@/types/guesty";
+import PropertyBookingCard from "@/components/booking/PropertyBookingCard";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -446,19 +447,6 @@ export default function PropertyPage() {
     }
   }, [id]);
 
-  const handleBookNow = () => {
-    const bookingUrl = `https://sanctuaryvillas.guestybookings.com/en/properties/${id}?minOccupancy=${minOccupancy}&checkIn=${checkIn}&checkOut=${checkOut}`;
-    window.open(bookingUrl, "_blank");
-  };
-
-  const formatPrice = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   if (isLoading) {
     return (
       <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
@@ -607,70 +595,15 @@ export default function PropertyPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="lg:hidden mb-8"
         >
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            {/* Price */}
-            {listing.prices?.basePrice > 0 && (
-              <div className="mb-6">
-                <p className="text-2xl font-semibold text-primary-dark">
-                  {formatPrice(
-                    listing.prices.basePrice,
-                    listing.prices.currency || "USD"
-                  )}
-                  <span className="text-base font-normal text-primary">
-                    {" "}
-                    / night
-                  </span>
-                </p>
-              </div>
-            )}
-
-            {/* Dates Summary */}
-            {checkIn && checkOut && (
-              <div className="border border-gray-200 rounded-lg p-4 mb-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-primary uppercase mb-1">
-                      Check-in
-                    </p>
-                    <p className="text-primary-dark font-medium">{checkIn}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-primary uppercase mb-1">
-                      Check-out
-                    </p>
-                    <p className="text-primary-dark font-medium">
-                      {checkOut}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-xs text-primary uppercase mb-1">
-                    Guests
-                  </p>
-                  <p className="text-primary-dark font-medium">
-                    {minOccupancy} Guest{parseInt(minOccupancy) > 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Book Now Button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleBookNow}
-              className="w-full bg-primary text-white text-lg font-medium py-4 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Book Now
-            </motion.button>
-
-            {/* Min Nights */}
-            {listing.terms?.minNights && listing.terms.minNights > 1 && (
-              <p className="text-center text-sm text-primary mt-4">
-                Minimum {listing.terms.minNights} nights
-              </p>
-            )}
-          </div>
+          <PropertyBookingCard
+            listingId={id}
+            listingTitle={listing.title}
+            maxGuests={listing.accommodates}
+            minNights={listing.terms?.minNights}
+            initialCheckIn={checkIn}
+            initialCheckOut={checkOut}
+            initialGuests={parseInt(minOccupancy)}
+          />
         </motion.div>
 
         {/* Content Grid */}
@@ -917,69 +850,16 @@ export default function PropertyPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="hidden lg:block"
           >
-            <div className="bg-white rounded-lg shadow-lg p-6 sticky top-28">
-              {/* Price */}
-              {listing.prices?.basePrice > 0 && (
-                <div className="mb-6">
-                  <p className="text-2xl font-semibold text-primary-dark">
-                    {formatPrice(
-                      listing.prices.basePrice,
-                      listing.prices.currency || "USD"
-                    )}
-                    <span className="text-base font-normal text-primary">
-                      {" "}
-                      / night
-                    </span>
-                  </p>
-                </div>
-              )}
-
-              {/* Dates Summary */}
-              {checkIn && checkOut && (
-                <div className="border border-gray-200 rounded-lg p-4 mb-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-primary uppercase mb-1">
-                        Check-in
-                      </p>
-                      <p className="text-primary-dark font-medium">{checkIn}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-primary uppercase mb-1">
-                        Check-out
-                      </p>
-                      <p className="text-primary-dark font-medium">
-                        {checkOut}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-xs text-primary uppercase mb-1">
-                      Guests
-                    </p>
-                    <p className="text-primary-dark font-medium">
-                      {minOccupancy} Guest{parseInt(minOccupancy) > 1 ? "s" : ""}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Book Now Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleBookNow}
-                className="w-full bg-primary text-white text-lg font-medium py-4 rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Book Now
-              </motion.button>
-
-              {/* Min Nights */}
-              {listing.terms?.minNights && listing.terms.minNights > 1 && (
-                <p className="text-center text-sm text-primary mt-4">
-                  Minimum {listing.terms.minNights} nights
-                </p>
-              )}
+            <div className="sticky top-28">
+              <PropertyBookingCard
+                listingId={id}
+                listingTitle={listing.title}
+                maxGuests={listing.accommodates}
+                minNights={listing.terms?.minNights}
+                initialCheckIn={checkIn}
+                initialCheckOut={checkOut}
+                initialGuests={parseInt(minOccupancy)}
+              />
             </div>
           </motion.div>
         </div>
