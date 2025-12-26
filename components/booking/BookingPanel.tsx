@@ -28,18 +28,22 @@ export default function BookingPanel({
   initialCheckOut,
   initialGuests,
 }: BookingPanelProps) {
+  // Parse dates without timezone shift
+  const parseDate = (dateStr: string) => new Date(dateStr + "T12:00:00");
+
   const [range, setRange] = useState<DateRange | undefined>(() => {
     if (initialCheckIn && initialCheckOut) {
       return {
-        from: new Date(initialCheckIn),
-        to: new Date(initialCheckOut),
+        from: parseDate(initialCheckIn),
+        to: parseDate(initialCheckOut),
       };
     }
     return undefined;
   });
   const [adults, setAdults] = useState(initialGuests || 1);
-  const [children, setChildren] = useState(0);
 
+  // Default month for calendar - show check-in month if available
+  const defaultMonth = initialCheckIn ? parseDate(initialCheckIn) : new Date();
   const handleSelect = (newRange: DateRange | undefined) => {
     setRange(newRange);
     onDateChange?.(newRange);
@@ -48,13 +52,7 @@ export default function BookingPanel({
   const handleAdultsChange = (delta: number) => {
     const newAdults = Math.max(1, adults + delta);
     setAdults(newAdults);
-    onGuestsChange?.(newAdults, children);
-  };
-
-  const handleChildrenChange = (delta: number) => {
-    const newChildren = Math.max(0, children + delta);
-    setChildren(newChildren);
-    onGuestsChange?.(adults, newChildren);
+    onGuestsChange?.(newAdults, 0);
   };
 
   const nights =
@@ -77,6 +75,7 @@ export default function BookingPanel({
           numberOfMonths={1}
           showOutsideDays={false}
           captionLayout="dropdown"
+          defaultMonth={defaultMonth}
           fromYear={new Date().getFullYear()}
           toYear={new Date().getFullYear() + 2}
           components={{
@@ -174,11 +173,11 @@ export default function BookingPanel({
         </div>
       </div>
 
-      {/* Guest Selectors */}
+      {/* Guest Selector */}
       <div className="space-y-4 mb-6">
-        {/* Adults */}
+        {/* Guests */}
         <div className="flex items-center justify-between">
-          <span className="text-primary text-base font-normal">Adults</span>
+          <span className="text-primary text-base font-normal">Guests</span>
           <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -231,62 +230,6 @@ export default function BookingPanel({
           </div>
         </div>
 
-        {/* Children */}
-        <div className="flex items-center justify-between">
-          <span className="text-primary-dark text-base font-normal">
-            Children
-          </span>
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleChildrenChange(-1)}
-              disabled={children <= 0}
-              className="w-8 h-8 flex items-center justify-center border border-primary-light rounded-md hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-primary-light"
-              >
-                <path
-                  d="M3 8H13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </motion.button>
-            <span className="text-primary text-base font-normal w-8 text-center">
-              {children}
-            </span>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleChildrenChange(1)}
-              className="w-8 h-8 flex items-center justify-center border border-primary-light rounded-md hover:bg-primary/10 transition-colors"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-primary-light"
-              >
-                <path
-                  d="M8 3V13M3 8H13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </motion.button>
-          </div>
-        </div>
       </div>
 
       {/* Find Date Button */}
@@ -300,7 +243,7 @@ export default function BookingPanel({
           if (onSearch && range?.from && range?.to) {
             const checkIn = format(range.from, "yyyy-MM-dd");
             const checkOut = format(range.to, "yyyy-MM-dd");
-            onSearch(checkIn, checkOut, adults + children);
+            onSearch(checkIn, checkOut, adults);
           }
         }}
         disabled={!range?.from || !range?.to || isLoading}

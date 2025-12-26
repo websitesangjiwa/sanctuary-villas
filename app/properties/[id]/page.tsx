@@ -479,7 +479,7 @@ export default function PropertyPage() {
             {error || "The villa you're looking for doesn't exist."}
           </p>
           <Link
-            href="/book"
+            href={`/book?checkIn=${checkIn}&checkOut=${checkOut}&guests=${minOccupancy}`}
             className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Search
@@ -504,7 +504,7 @@ export default function PropertyPage() {
           className="mb-6"
         >
           <Link
-            href="/book"
+            href={`/book?checkIn=${checkIn}&checkOut=${checkOut}&guests=${minOccupancy}`}
             className="inline-flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
           >
             <svg
