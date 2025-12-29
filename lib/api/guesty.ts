@@ -7,7 +7,7 @@ const GUESTY_CONFIG = {
   apiUrl: 'https://booking.guesty.com/api',
   bookingUrl: 'https://sanctuaryvillas.guestybookings.com',
   cache: {
-    tokenTTL: 3500, // ~58 minutes in seconds (token expires in 1 hour)
+    tokenTTL: 82800, // 23 hours in seconds (token valid for 24 hours per Guesty docs)
     listingsRevalidate: 60, // 1 minute
     listingRevalidate: 300, // 5 minutes
   },
