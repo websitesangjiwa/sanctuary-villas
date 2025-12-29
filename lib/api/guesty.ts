@@ -21,18 +21,20 @@ interface CachedToken {
 }
 
 // Redis client for token caching (persists across serverless invocations)
-// Uses Vercel KV environment variable names
+// Uses UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars
 // Returns null if env vars are not configured (fallback to direct API calls)
 function createRedisClient(): Redis | null {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
-    console.warn('Redis env vars not configured (KV_REST_API_URL, KV_REST_API_TOKEN). Token caching disabled.');
+    console.warn('Redis env vars not configured. Token caching disabled.');
+    console.warn('Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN');
     return null;
   }
 
-  return new Redis({ url, token });
+  console.log('Redis client initialized');
+  return Redis.fromEnv();
 }
 
 const redis = createRedisClient();
