@@ -7,11 +7,18 @@ const GUESTY_CONFIG = {
   apiUrl: 'https://booking.guesty.com/api',
   bookingUrl: 'https://sanctuaryvillas.guestybookings.com',
   cache: {
-    tokenTTL: 82800, // 23 hours in seconds (token valid for 24 hours per Guesty docs)
+    // Token refresh buffer: 5 minutes before expiry (per Guesty docs)
+    tokenRefreshBuffer: 300,
     listingsRevalidate: 60, // 1 minute
     listingRevalidate: 300, // 5 minutes
   },
 } as const;
+
+// Cached token structure (following Guesty official example)
+interface CachedToken {
+  access_token: string;
+  expires_at: number; // timestamp in ms when token should be refreshed
+}
 
 // Redis client for token caching (persists across serverless invocations)
 // Uses Vercel KV environment variable names
@@ -30,12 +37,15 @@ function createRedisClient(): Redis | null {
 
 const redis = createRedisClient();
 const TOKEN_KEY = 'guesty_token';
+const TOKEN_LOCK_KEY = 'guesty_token_lock';
+const LOCK_TTL = 10; // Lock expires in 10 seconds
 
 // Helper for delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Token management with retry logic for rate limiting
-async function fetchGuestyToken(retries = 3): Promise<string> {
+// Returns both access_token and expires_in (per Guesty official example)
+async function fetchGuestyTokenRaw(retries = 3): Promise<{ access_token: string; expires_in: number }> {
   const clientId = process.env.GUESTY_CLIENT_ID;
   const clientSecret = process.env.GUESTY_CLIENT_SECRET;
 
@@ -62,7 +72,11 @@ async function fetchGuestyToken(retries = 3): Promise<string> {
 
     if (response.ok) {
       const data: GuestyTokenResponse = await response.json();
-      return data.access_token;
+      // Guesty returns expires_in in seconds (86400 = 24 hours)
+      return {
+        access_token: data.access_token,
+        expires_in: data.expires_in || 86400 // Default to 24 hours if not provided
+      };
     }
 
     // Handle rate limiting with exponential backoff
@@ -80,50 +94,70 @@ async function fetchGuestyToken(retries = 3): Promise<string> {
   throw new Error('Failed to get Guesty token after all retries');
 }
 
-// Cached token getter with Redis storage (works across serverless invocations)
+// Cached token getter with Redis storage and distributed lock
+// Following Guesty official example: store expires_at and refresh 5 min before expiry
 export async function getGuestyToken(): Promise<string> {
-  // Try to get cached token from Redis (if available)
   if (redis) {
     try {
-      const cached = await redis.get<string>(TOKEN_KEY);
-      if (cached) {
-        console.log('Token retrieved from Redis cache');
-        return cached;
+      // Try to get cached token
+      const cached = await redis.get<CachedToken>(TOKEN_KEY);
+
+      // Check if token exists AND is not expired (per Guesty official example)
+      if (cached && Date.now() < cached.expires_at) {
+        return cached.access_token;
       }
     } catch (error) {
-      console.error('Redis get error, fetching new token:', error);
+      console.error('Redis get error:', error);
     }
-  }
 
-  // Fetch new token from Guesty API
-  console.log('Fetching new token from Guesty API...');
-  const token = await fetchGuestyToken();
-
-  // Cache in Redis with TTL using NX to prevent race conditions
-  if (redis) {
+    // Token missing or expired - try to acquire lock before fetching
     try {
-      const setResult = await redis.set(TOKEN_KEY, token, {
-        ex: GUESTY_CONFIG.cache.tokenTTL,
-        nx: true // Only set if key doesn't exist (prevents race condition)
+      const lockAcquired = await redis.set(TOKEN_LOCK_KEY, '1', {
+        ex: LOCK_TTL,
+        nx: true // Only set if lock doesn't exist
       });
 
-      if (setResult === 'OK') {
-        console.log('Token cached in Redis with TTL:', GUESTY_CONFIG.cache.tokenTTL, 'seconds');
+      if (lockAcquired === 'OK') {
+        // We got the lock - fetch token from Guesty
+        console.log('Lock acquired, fetching new token from Guesty API...');
+        const { access_token, expires_in } = await fetchGuestyTokenRaw();
+
+        // Store with expiration timestamp (5 min before actual expiry per Guesty docs)
+        const tokenData: CachedToken = {
+          access_token,
+          expires_at: Date.now() + (expires_in - GUESTY_CONFIG.cache.tokenRefreshBuffer) * 1000
+        };
+
+        await redis.set(TOKEN_KEY, tokenData);
+        console.log('Token cached, will refresh in', expires_in - GUESTY_CONFIG.cache.tokenRefreshBuffer, 'seconds');
+
+        // Release lock
+        await redis.del(TOKEN_LOCK_KEY);
+
+        return access_token;
       } else {
-        // Another process already set the token, get that one
-        const existingToken = await redis.get<string>(TOKEN_KEY);
-        if (existingToken) {
-          console.log('Using token from another process');
-          return existingToken;
+        // Another process is fetching - wait and retry getting from cache
+        console.log('Another process is fetching token, waiting...');
+        for (let i = 0; i < 10; i++) {
+          await delay(500); // Wait 500ms
+          const cached = await redis.get<CachedToken>(TOKEN_KEY);
+          if (cached && Date.now() < cached.expires_at) {
+            console.log('Got token from cache after waiting');
+            return cached.access_token;
+          }
         }
+        // Timeout - fetch anyway as fallback
+        console.log('Timeout waiting for token, fetching directly');
       }
     } catch (error) {
-      console.error('Redis set error:', error);
-      // Token is still valid even if Redis fails
+      console.error('Redis lock error:', error);
     }
   }
 
-  return token;
+  // Fallback: fetch directly (no Redis or lock failed)
+  console.log('Fetching token directly (no cache)...');
+  const { access_token } = await fetchGuestyTokenRaw();
+  return access_token;
 }
 
 // API request helper
