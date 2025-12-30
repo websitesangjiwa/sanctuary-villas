@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format, differenceInDays } from "date-fns";
 import { motion } from "framer-motion";
+
+interface GuestyQuote {
+  totalPrice: number;
+  currency: string;
+}
 
 interface PropertyBookingCardProps {
   listingId: string;
@@ -13,6 +18,16 @@ interface PropertyBookingCardProps {
   initialGuests?: number;
 }
 
+// Format price with currency
+const formatPrice = (amount: number, currency: string = "USD") => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
 export default function PropertyBookingCard({
   listingId,
   maxGuests,
@@ -22,12 +37,47 @@ export default function PropertyBookingCard({
   initialGuests = 1,
 }: PropertyBookingCardProps) {
   const [guests, setGuests] = useState(initialGuests);
+  const [quote, setQuote] = useState<GuestyQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
   // Parse dates without timezone shift (add T12:00:00 to avoid UTC midnight issues)
   const checkInDate = initialCheckIn ? new Date(initialCheckIn + "T12:00:00") : null;
   const checkOutDate = initialCheckOut ? new Date(initialCheckOut + "T12:00:00") : null;
   const nights =
     checkInDate && checkOutDate ? differenceInDays(checkOutDate, checkInDate) : 0;
+
+  // Fetch quote when dates are available
+  const fetchQuote = useCallback(async () => {
+    if (!initialCheckIn || !initialCheckOut || !listingId) return;
+
+    setQuoteLoading(true);
+
+    try {
+      const response = await fetch("/api/guesty/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId,
+          checkIn: initialCheckIn,
+          checkOut: initialCheckOut,
+          guests,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setQuote({ totalPrice: data.totalPrice, currency: data.currency });
+      }
+    } catch {
+      // Silently fail - just don't show price
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [listingId, initialCheckIn, initialCheckOut, guests]);
+
+  useEffect(() => {
+    fetchQuote();
+  }, [fetchQuote]);
 
   const handleGuestsChange = (delta: number) => {
     const newGuests = Math.max(1, Math.min(maxGuests, guests + delta));
@@ -72,6 +122,22 @@ export default function PropertyBookingCard({
         <span className="text-primary text-sm">Guests</span>
         <span className="text-primary-dark text-sm font-medium">{guests}</span>
       </div>
+
+      {/* Total Price */}
+      {checkInDate && checkOutDate && (
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-primary/20">
+          <span className="text-primary text-sm">Total</span>
+          {quoteLoading ? (
+            <span className="text-primary text-sm">Loading...</span>
+          ) : quote ? (
+            <span className="text-primary-dark text-base font-semibold">
+              {formatPrice(quote.totalPrice, quote.currency)}
+            </span>
+          ) : (
+            <span className="text-primary text-sm">-</span>
+          )}
+        </div>
+      )}
 
       {/* Min nights notice */}
       {minNights > 1 && nights > 0 && nights < minNights && (
