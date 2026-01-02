@@ -4,11 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { format, differenceInDays } from "date-fns";
 import { motion } from "framer-motion";
 
-interface GuestyQuote {
-  totalPrice: number;
-  currency: string;
-}
-
 interface PropertyBookingCardProps {
   listingId: string;
   maxGuests: number;
@@ -16,6 +11,12 @@ interface PropertyBookingCardProps {
   initialCheckIn?: string;
   initialCheckOut?: string;
   initialGuests?: number;
+}
+
+interface QuoteData {
+  totalPrice: number;
+  currency: string;
+  nights: number;
 }
 
 // Format price with currency
@@ -37,21 +38,19 @@ export default function PropertyBookingCard({
   initialGuests = 1,
 }: PropertyBookingCardProps) {
   const [guests, setGuests] = useState(initialGuests);
-  const [quote, setQuote] = useState<GuestyQuote | null>(null);
+  const [quote, setQuote] = useState<QuoteData | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
 
-  // Parse dates without timezone shift (add T12:00:00 to avoid UTC midnight issues)
+  // Parse dates without timezone shift
   const checkInDate = initialCheckIn ? new Date(initialCheckIn + "T12:00:00") : null;
   const checkOutDate = initialCheckOut ? new Date(initialCheckOut + "T12:00:00") : null;
-  const nights =
-    checkInDate && checkOutDate ? differenceInDays(checkOutDate, checkInDate) : 0;
+  const nights = checkInDate && checkOutDate ? differenceInDays(checkOutDate, checkInDate) : 0;
 
   // Fetch quote when dates are available
   const fetchQuote = useCallback(async () => {
     if (!initialCheckIn || !initialCheckOut || !listingId) return;
 
     setQuoteLoading(true);
-
     try {
       const response = await fetch("/api/guesty/quotes", {
         method: "POST",
@@ -66,10 +65,14 @@ export default function PropertyBookingCard({
 
       if (response.ok) {
         const data = await response.json();
-        setQuote({ totalPrice: data.totalPrice, currency: data.currency });
+        setQuote({
+          totalPrice: data.totalPrice,
+          currency: data.currency,
+          nights: data.nights,
+        });
       }
     } catch {
-      // Silently fail - just don't show price
+      // Silently fail
     } finally {
       setQuoteLoading(false);
     }
@@ -79,22 +82,29 @@ export default function PropertyBookingCard({
     fetchQuote();
   }, [fetchQuote]);
 
-  const handleGuestsChange = (delta: number) => {
-    const newGuests = Math.max(1, Math.min(maxGuests, guests + delta));
-    setGuests(newGuests);
-  };
-
   const handleBook = () => {
     if (!initialCheckIn || !initialCheckOut) return;
-
     const bookingUrl = `https://sanctuaryvillas.guestybookings.com/en/properties/${listingId}/checkout?minOccupancy=${guests}&checkIn=${initialCheckIn}&checkOut=${initialCheckOut}`;
     window.open(bookingUrl, "_blank");
   };
 
   const isBookDisabled = !initialCheckIn || !initialCheckOut || (minNights > 1 && nights < minNights);
 
+  // Calculate price per night from quote
+  const pricePerNight = quote && quote.nights > 0 ? quote.totalPrice / quote.nights : null;
+
   return (
     <div className="bg-[#fffdf3] rounded-lg shadow-lg p-6">
+      {/* Price per night from quote */}
+      {pricePerNight && !quoteLoading && (
+        <div className="mb-4 pb-4 border-b border-primary/20">
+          <span className="text-primary-dark text-xl font-semibold">
+            {formatPrice(pricePerNight, quote?.currency)}
+          </span>
+          <span className="text-primary text-sm"> / night</span>
+        </div>
+      )}
+
       {/* Date info */}
       {checkInDate && checkOutDate && (
         <div className="space-y-3 mb-4 pb-4 border-b border-primary/20">
@@ -123,7 +133,7 @@ export default function PropertyBookingCard({
         <span className="text-primary-dark text-sm font-medium">{guests}</span>
       </div>
 
-      {/* Total Price */}
+      {/* Total Price from quote */}
       {checkInDate && checkOutDate && (
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-primary/20">
           <span className="text-primary text-sm">Total</span>

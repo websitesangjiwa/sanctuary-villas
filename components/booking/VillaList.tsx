@@ -65,7 +65,11 @@ export default function VillaList({
           listing.pictures?.[0]?.large ||
           null;
 
-        const price = listing.prices?.basePrice || 0;
+        // Get average nightly rate from nightlyRates (dynamic pricing)
+        const nightlyRates = listing.nightlyRates;
+        const avgNightlyRate = nightlyRates
+          ? Object.values(nightlyRates).reduce((sum, rate) => sum + rate, 0) / Object.values(nightlyRates).length
+          : 0;
         const currency = listing.prices?.currency || "USD";
 
         const formatPrice = (amount: number, curr: string) => {
@@ -144,9 +148,9 @@ export default function VillaList({
                   )}
                 </div>
                 <div className="mt-4 flex items-center justify-between">
-                  {price > 0 && (
+                  {avgNightlyRate > 0 && (
                     <p className="text-primary-dark text-lg font-medium">
-                      {formatPrice(price, currency)}
+                      {formatPrice(Math.round(avgNightlyRate), currency)}
                       <span className="text-sm font-normal text-primary">
                         {" "}
                         / night

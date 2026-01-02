@@ -68,6 +68,8 @@ export interface GuestyListing {
     minNights?: number;
     maxNights?: number;
   };
+  // Dynamic pricing per night (from search results)
+  nightlyRates?: Record<string, number>;
 }
 
 export interface GuestyListingsResponse {
