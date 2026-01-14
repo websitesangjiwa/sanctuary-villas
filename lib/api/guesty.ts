@@ -1,4 +1,15 @@
-import { GuestyTokenResponse, GuestyListing, GuestyListingsResponse, GuestyQuote, GuestyQuoteRequest } from '@/types/guesty';
+import {
+  GuestyTokenResponse,
+  GuestyListing,
+  GuestyListingsResponse,
+  GuestyQuote,
+  GuestyQuoteRequest,
+  GuestyQuoteWithRatePlan,
+  GuestyPaymentProvider,
+  GuestyReservationRequest,
+  GuestyReservation,
+  GuestyGuest
+} from '@/types/guesty';
 import { Redis } from '@upstash/redis';
 
 // Configuration
@@ -351,5 +362,168 @@ export async function getQuote(params: GuestyQuoteRequest): Promise<GuestyQuote>
     fees,
     taxes,
     totalPrice: money?.subTotalPrice || 0,
+  };
+}
+
+// Quote API with ratePlanId (needed for reservation creation)
+export async function getQuoteWithRatePlan(params: GuestyQuoteRequest): Promise<GuestyQuoteWithRatePlan> {
+  const response = await guestyPost<GuestyQuoteRawResponse>('/reservations/quotes', {
+    listingId: params.listingId,
+    checkInDateLocalized: params.checkIn,
+    checkOutDateLocalized: params.checkOut,
+    guestsCount: params.guests,
+  });
+
+  const ratePlanWrapper = response.rates?.ratePlans?.[0];
+  if (!ratePlanWrapper) {
+    throw new Error('No rate plan available for these dates');
+  }
+
+  const money = ratePlanWrapper.ratePlan?.money;
+  const invoiceItems = money?.invoiceItems || [];
+  const nights = ratePlanWrapper.days?.length || 0;
+
+  const fees = invoiceItems
+    .filter(item => item.type !== 'ACCOMMODATION_FARE' && item.type !== 'TAX')
+    .map(item => ({
+      name: item.title,
+      amount: item.amount,
+      type: item.type,
+    }));
+
+  const taxes = invoiceItems
+    .filter(item => item.type === 'TAX')
+    .map(item => ({
+      name: item.title,
+      amount: item.amount,
+      type: item.type,
+    }));
+
+  return {
+    _id: response._id,
+    ratePlanId: ratePlanWrapper.ratePlan._id,
+    listingId: params.listingId,
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    guests: params.guests,
+    nights,
+    currency: money?.currency || 'USD',
+    accommodationFare: money?.fareAccommodation || 0,
+    fees,
+    taxes,
+    totalPrice: money?.subTotalPrice || 0,
+  };
+}
+
+// Payment Provider API - Get Stripe publishable key for a listing
+// Note: Guesty returns providerAccountId (Stripe Connect account), not the publishable key
+// The publishable key must come from environment variable (platform's Stripe key)
+export async function getPaymentProvider(listingId: string): Promise<GuestyPaymentProvider> {
+  const response = await guestyFetch<{
+    _id?: string;
+    providerType?: string;
+    providerAccountId?: string;
+    status?: string;
+  }>(`/listings/${listingId}/payment-provider`);
+
+  const isStripe = response.providerType?.toLowerCase() === 'stripe';
+
+  // Get publishable key from environment (platform's Stripe publishable key)
+  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+
+  if (isStripe && !publishableKey) {
+    console.warn('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY not configured');
+  }
+
+  return {
+    provider: isStripe ? 'stripe' : 'other',
+    publishableKey,
+    accountId: response.providerAccountId || '',
+  };
+}
+
+// Reservation API - Create a reservation with payment
+interface GuestyReservationRawResponse {
+  _id: string;
+  confirmationCode: string;
+  status: string;
+  listing: {
+    _id: string;
+  };
+  checkInDateLocalized: string;
+  checkOutDateLocalized: string;
+  guestsCount: number;
+  money: {
+    subTotalPrice: number;
+    currency: string;
+  };
+  guest: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export async function createReservation(data: GuestyReservationRequest): Promise<GuestyReservation> {
+  // Build guest object with optional billing address fields
+  const guestData: Record<string, string | undefined> = {
+    firstName: data.guest.firstName,
+    lastName: data.guest.lastName,
+    email: data.guest.email,
+    phone: data.guest.phone,
+  };
+
+  // Add billing address fields if provided
+  if (data.guest.street) guestData.street = data.guest.street;
+  if (data.guest.city) guestData.city = data.guest.city;
+  if (data.guest.state) guestData.state = data.guest.state;
+  if (data.guest.zipCode) guestData.zipCode = data.guest.zipCode;
+  if (data.guest.country) guestData.country = data.guest.country;
+  if (data.guest.countryCode) guestData.countryCode = data.guest.countryCode;
+
+  // Build request body
+  const requestBody: Record<string, unknown> = {
+    quoteId: data.quoteId,
+    ratePlanId: data.ratePlanId,
+    guest: guestData,
+    payment: {
+      ccToken: data.ccToken,
+    },
+    // REQUIRED consent fields for Guesty API
+    privacy: {
+      isAccepted: data.consent.privacyAccepted,
+    },
+    termsAndConditions: {
+      isAccepted: data.consent.termsAccepted,
+    },
+    marketing: {
+      isAccepted: data.consent.marketingAccepted || false,
+    },
+  };
+
+  // Add special request if provided
+  if (data.specialRequest) {
+    requestBody.notes = data.specialRequest;
+  }
+
+  const response = await guestyPost<GuestyReservationRawResponse>('/reservations', requestBody);
+
+  return {
+    _id: response._id,
+    confirmationCode: response.confirmationCode,
+    status: response.status as GuestyReservation['status'],
+    listingId: response.listing._id,
+    checkIn: response.checkInDateLocalized,
+    checkOut: response.checkOutDateLocalized,
+    guests: response.guestsCount,
+    totalPrice: response.money.subTotalPrice,
+    currency: response.money.currency,
+    guest: {
+      firstName: response.guest.firstName,
+      lastName: response.guest.lastName,
+      email: response.guest.email,
+      phone: response.guest.phone,
+    },
   };
 }

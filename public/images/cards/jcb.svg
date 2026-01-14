@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 32" fill="none">
+  <rect width="48" height="32" rx="4" fill="#FFFFFF"/>
+  <rect x="8" y="6" width="10" height="20" rx="2" fill="url(#jcb1)"/>
+  <rect x="19" y="6" width="10" height="20" rx="2" fill="url(#jcb2)"/>
+  <rect x="30" y="6" width="10" height="20" rx="2" fill="url(#jcb3)"/>
+  <text x="11" y="19" fill="white" font-size="8" font-weight="bold" font-family="Arial">J</text>
+  <text x="22" y="19" fill="white" font-size="8" font-weight="bold" font-family="Arial">C</text>
+  <text x="33" y="19" fill="white" font-size="8" font-weight="bold" font-family="Arial">B</text>
+  <defs>
+    <linearGradient id="jcb1" x1="13" y1="6" x2="13" y2="26" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#007940"/>
+      <stop offset="1" stop-color="#00873F"/>
+    </linearGradient>
+    <linearGradient id="jcb2" x1="24" y1="6" x2="24" y2="26" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F286F"/>
+      <stop offset="1" stop-color="#004E94"/>
+    </linearGradient>
+    <linearGradient id="jcb3" x1="35" y1="6" x2="35" y2="26" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6C2C2F"/>
+      <stop offset="1" stop-color="#B52536"/>
+    </linearGradient>
+  </defs>
+</svg>

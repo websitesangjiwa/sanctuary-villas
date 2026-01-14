@@ -72,3 +72,63 @@ section {
 .property-thumbnails .swiper-button-disabled {
   opacity: 0.3;
 }
+
+/* Phone Input Styles */
+.phone-input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.phone-input-wrapper .PhoneInputCountry {
+  padding: 0.5rem;
+  border: 1px solid rgba(202, 183, 151, 0.4);
+  border-radius: 0.5rem;
+  background: white;
+  margin-right: 0.5rem;
+}
+
+.phone-input-wrapper .PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1.125rem;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.phone-input-wrapper .PhoneInputCountrySelectArrow {
+  margin-left: 0.375rem;
+  color: #643c15;
+  opacity: 0.6;
+}
+
+.phone-input-wrapper .PhoneInputInput {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(202, 183, 151, 0.4);
+  border-radius: 0.5rem;
+  background: white;
+  color: #2e1b12;
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.phone-input-wrapper .PhoneInputInput::placeholder {
+  color: #717182;
+}
+
+.phone-input-wrapper .PhoneInputInput:focus {
+  box-shadow: 0 0 0 2px rgba(202, 183, 151, 0.5);
+}
+
+/* Phone input error state */
+.phone-input-error .PhoneInputInput {
+  border-color: #fb2c36;
+}
+
+/* Phone input disabled state */
+.phone-input-disabled .PhoneInputCountry,
+.phone-input-disabled .PhoneInputInput {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+}

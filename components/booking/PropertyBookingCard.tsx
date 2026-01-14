@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
 import { motion } from "framer-motion";
 
@@ -37,6 +38,7 @@ export default function PropertyBookingCard({
   initialCheckOut,
   initialGuests = 1,
 }: PropertyBookingCardProps) {
+  const router = useRouter();
   const [guests, setGuests] = useState(initialGuests);
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -84,8 +86,8 @@ export default function PropertyBookingCard({
 
   const handleBook = () => {
     if (!initialCheckIn || !initialCheckOut) return;
-    const bookingUrl = `https://sanctuaryvillas.guestybookings.com/en/properties/${listingId}/checkout?minOccupancy=${guests}&checkIn=${initialCheckIn}&checkOut=${initialCheckOut}`;
-    window.open(bookingUrl, "_blank");
+    // Navigate to our internal checkout page
+    router.push(`/checkout/${listingId}?checkIn=${initialCheckIn}&checkOut=${initialCheckOut}&guests=${guests}`);
   };
 
   const isBookDisabled = !initialCheckIn || !initialCheckOut || (minNights > 1 && nights < minNights);

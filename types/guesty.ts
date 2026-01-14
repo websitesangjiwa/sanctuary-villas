@@ -113,3 +113,74 @@ export interface GuestyQuoteRequest {
   checkOut: string;
   guests: number;
 }
+
+// Extended quote with ratePlanId (needed for reservation)
+export interface GuestyQuoteWithRatePlan extends GuestyQuote {
+  ratePlanId: string;
+}
+
+// Payment provider types
+export interface GuestyPaymentProvider {
+  provider: 'stripe' | 'other';
+  publishableKey: string;
+  accountId?: string;
+}
+
+// Guest information for booking
+export interface GuestyGuest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+// Extended guest info with billing address
+export interface GuestyGuestExtended extends GuestyGuest {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  countryCode?: string;
+}
+
+// Billing address for payment
+export interface GuestyBillingAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  countryCode?: string;
+}
+
+// Consent fields (required by Guesty API)
+export interface GuestyConsent {
+  privacyAccepted: boolean;
+  termsAccepted: boolean;
+  marketingAccepted?: boolean;
+}
+
+// Reservation request with extended fields
+export interface GuestyReservationRequest {
+  quoteId: string;
+  ratePlanId: string;
+  guest: GuestyGuestExtended;
+  ccToken: string;
+  consent: GuestyConsent;
+  specialRequest?: string;
+}
+
+// Reservation response
+export interface GuestyReservation {
+  _id: string;
+  confirmationCode: string;
+  status: 'confirmed' | 'pending' | 'cancelled' | 'inquiry';
+  listingId: string;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  totalPrice: number;
+  currency: string;
+  guest: GuestyGuest;
+}
