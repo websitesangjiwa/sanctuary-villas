@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import {
   GuestyTokenResponse,
   GuestyListing,
@@ -222,6 +223,10 @@ export async function getListingById(id: string): Promise<GuestyListing> {
     { revalidate: GUESTY_CONFIG.cache.listingRevalidate }
   );
 }
+
+// Cached version for Server Components - deduplicates within same request lifecycle
+// Use this when generateMetadata and page component both need the same listing
+export const getListingByIdCached = cache(getListingById);
 
 // Booking URL helper
 export function getBookingUrl(listingId: string, params: SearchListingsParams): string {

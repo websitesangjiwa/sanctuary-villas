@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getListingById, getQuoteWithRatePlan } from "@/lib/api/guesty";
+import { getListingByIdCached, getQuoteWithRatePlan } from "@/lib/api/guesty";
 import CheckoutForm from "@/components/checkout/CheckoutForm";
 import BookingFlowHeader from "@/components/booking/BookingFlowHeader";
 
@@ -20,7 +20,7 @@ export async function generateMetadata({
   const { listingId } = await params;
 
   try {
-    const listing = await getListingById(listingId);
+    const listing = await getListingByIdCached(listingId);
     return {
       title: `Checkout - ${listing.title} | Sanctuary Villas`,
       description: `Complete your booking for ${listing.title}`,
@@ -47,9 +47,9 @@ export default async function CheckoutPage({
   const guestCount = parseInt(guests || "1", 10);
 
   try {
-    // Fetch listing and quote in parallel
+    // Fetch listing (cached from generateMetadata) and quote in parallel
     const [listing, quote] = await Promise.all([
-      getListingById(listingId),
+      getListingByIdCached(listingId),
       getQuoteWithRatePlan({
         listingId,
         checkIn,
