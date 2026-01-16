@@ -100,7 +100,7 @@ const ConsentCheckboxes = forwardRef<ConsentCheckboxesRef, ConsentCheckboxesProp
     `;
 
     return (
-      <div className="space-y-3 border-t border-[#cab797]/30 pt-4">
+      <div className="space-y-3">
         {/* Terms and Privacy - Combined checkbox (required) */}
         <div className="flex items-start gap-3">
           <input

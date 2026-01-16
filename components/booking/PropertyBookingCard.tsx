@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
 import { motion } from "framer-motion";
+import { useQuote } from "@/lib/hooks/useGuesty";
 
 interface PropertyBookingCardProps {
   listingId: string;
@@ -12,12 +13,6 @@ interface PropertyBookingCardProps {
   initialCheckIn?: string;
   initialCheckOut?: string;
   initialGuests?: number;
-}
-
-interface QuoteData {
-  totalPrice: number;
-  currency: string;
-  nights: number;
 }
 
 // Format price with currency
@@ -39,50 +34,20 @@ export default function PropertyBookingCard({
   initialGuests = 1,
 }: PropertyBookingCardProps) {
   const router = useRouter();
-  const [guests, setGuests] = useState(initialGuests);
-  const [quote, setQuote] = useState<QuoteData | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [guests] = useState(initialGuests);
 
   // Parse dates without timezone shift
   const checkInDate = initialCheckIn ? new Date(initialCheckIn + "T12:00:00") : null;
   const checkOutDate = initialCheckOut ? new Date(initialCheckOut + "T12:00:00") : null;
   const nights = checkInDate && checkOutDate ? differenceInDays(checkOutDate, checkInDate) : 0;
 
-  // Fetch quote when dates are available
-  const fetchQuote = useCallback(async () => {
-    if (!initialCheckIn || !initialCheckOut || !listingId) return;
-
-    setQuoteLoading(true);
-    try {
-      const response = await fetch("/api/guesty/quotes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingId,
-          checkIn: initialCheckIn,
-          checkOut: initialCheckOut,
-          guests,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setQuote({
-          totalPrice: data.totalPrice,
-          currency: data.currency,
-          nights: data.nights,
-        });
-      }
-    } catch {
-      // Silently fail
-    } finally {
-      setQuoteLoading(false);
-    }
-  }, [listingId, initialCheckIn, initialCheckOut, guests]);
-
-  useEffect(() => {
-    fetchQuote();
-  }, [fetchQuote]);
+  // Use React Query for cached quote fetching
+  const { data: quote, isLoading: quoteLoading } = useQuote({
+    listingId,
+    checkIn: initialCheckIn,
+    checkOut: initialCheckOut,
+    guests,
+  });
 
   const handleBook = () => {
     if (!initialCheckIn || !initialCheckOut) return;

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useImperativeHandle, forwardRef } from "react";
-import { getCountries } from "react-phone-number-input";
-import en from "react-phone-number-input/locale/en";
 import { BillingAddressFormData } from "@/lib/validators/checkout";
+import CountrySelect from "@/components/ui/CountrySelect";
 
 export interface BillingAddressFormRef {
   getData: () => BillingAddressFormData;
@@ -13,14 +12,6 @@ interface BillingAddressFormProps {
   disabled?: boolean;
   initialData?: Partial<BillingAddressFormData>;
 }
-
-// Get all countries from react-phone-number-input and sort alphabetically
-const COUNTRIES = getCountries()
-  .map((code) => ({
-    code,
-    name: en[code] || code,
-  }))
-  .sort((a, b) => a.name.localeCompare(b.name));
 
 const BillingAddressForm = forwardRef<BillingAddressFormRef, BillingAddressFormProps>(
   function BillingAddressForm({ disabled = false, initialData }, ref) {
@@ -34,17 +25,15 @@ const BillingAddressForm = forwardRef<BillingAddressFormRef, BillingAddressFormP
     });
 
     const handleChange = (field: keyof BillingAddressFormData, value: string) => {
-      if (field === "country") {
-        // When country changes, also update country code
-        const selectedCountry = COUNTRIES.find((c) => c.name === value);
-        setFormData((prev) => ({
-          ...prev,
-          country: value,
-          countryCode: selectedCountry?.code || "",
-        }));
-      } else {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-      }
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleCountryChange = (country: { name: string; code: string }) => {
+      setFormData((prev) => ({
+        ...prev,
+        country: country.name,
+        countryCode: country.code,
+      }));
     };
 
     useImperativeHandle(ref, () => ({
@@ -153,25 +142,12 @@ const BillingAddressForm = forwardRef<BillingAddressFormRef, BillingAddressFormP
             >
               Country
             </label>
-            <select
-              id="country"
-              value={formData.country}
-              onChange={(e) => handleChange("country", e.target.value)}
+            <CountrySelect
+              value={formData.country || ""}
+              onChange={handleCountryChange}
               disabled={disabled}
-              className={`
-                ${inputClasses}
-                appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23643c15%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]
-                bg-no-repeat bg-[right_0.5rem_center] bg-[length:1.25rem_1.25rem] pr-10
-              `}
-              autoComplete="country-name"
-            >
-              <option value="">Select an option</option>
-              {COUNTRIES.map((country) => (
-                <option key={country.code} value={country.name}>
-                  {country.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Select a country"
+            />
           </div>
         </div>
       </div>

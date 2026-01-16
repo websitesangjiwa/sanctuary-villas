@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import BookingPanel from "@/components/booking/BookingPanel";
+import BookingFlowHeader from "@/components/booking/BookingFlowHeader";
 import VillaList from "@/components/booking/VillaList";
 import { GuestyListing } from "@/types/guesty";
+import { usePrefetchListings } from "@/lib/hooks/useGuesty";
 
 function BookPageContent() {
   const searchParams = useSearchParams();
@@ -21,6 +23,9 @@ function BookPageContent() {
     checkOut: string;
     guests: number;
   } | null>(null);
+
+  // Prefetch individual listings into cache for instant property page navigation
+  const prefetchListings = usePrefetchListings();
 
   const handleSearch = useCallback(async (
     checkIn: string,
@@ -39,14 +44,18 @@ function BookPageContent() {
       });
       const res = await fetch(`/api/guesty/listings?${params}`);
       const data = await res.json();
-      setListings(data.results || []);
+      const results = data.results || [];
+      setListings(results);
+
+      // Cache each listing for instant property page navigation
+      prefetchListings(results);
     } catch (error) {
       console.error("Error fetching listings:", error);
       setListings([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [prefetchListings]);
 
   // Auto-trigger search if URL params are present
   useEffect(() => {
@@ -56,18 +65,18 @@ function BookPageContent() {
   }, [urlCheckIn, urlCheckOut, urlGuests, hasSearched, handleSearch]);
 
   return (
-    <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
-      <div className="container mx-auto px-8 md:px-8 lg:px-14">
-        {/* Heading */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="font-serif text-3xl lg:text-5xl text-center text-primary-dark tracking-[4px] mb-12 lg:mb-16"
-        >
-          Book Your Stay
-        </motion.h1>
+    <main className="min-h-screen bg-surface">
+      {/* Booking Flow Header */}
+      <div className="pt-20 lg:pt-24">
+        <BookingFlowHeader
+          currentStep={1}
+          checkIn={currentSearchParams?.checkIn || urlCheckIn || undefined}
+          checkOut={currentSearchParams?.checkOut || urlCheckOut || undefined}
+          guests={currentSearchParams?.guests || (urlGuests ? parseInt(urlGuests) : undefined)}
+        />
+      </div>
 
+      <div className="container mx-auto px-8 md:px-8 lg:px-14 py-8 lg:py-12">
         {/* Two Column Layout */}
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Booking Panel */}
@@ -140,11 +149,11 @@ function BookPageContent() {
 
 function BookPageLoading() {
   return (
-    <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
-      <div className="container mx-auto px-8 md:px-8 lg:px-14">
-        <div className="font-serif text-3xl lg:text-5xl text-center text-primary-dark tracking-[4px] mb-12 lg:mb-16">
-          Book Your Stay
-        </div>
+    <main className="min-h-screen bg-surface">
+      <div className="pt-20 lg:pt-24">
+        <BookingFlowHeader currentStep={1} />
+      </div>
+      <div className="container mx-auto px-8 md:px-8 lg:px-14 py-8 lg:py-12">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="w-full lg:w-[417px] shrink-0">
             <div className="bg-[#fffdf3] rounded-lg shadow-lg p-8 animate-pulse">

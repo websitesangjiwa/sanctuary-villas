@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useImperativeHandle, forwardRef } from "react";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
+import PhoneInputCustom from "@/components/ui/PhoneInputCustom";
 import { GuestInfoFormData, validateGuestInfo } from "@/lib/validators/checkout";
 
 export interface GuestInfoFormRef {
@@ -186,15 +185,14 @@ const GuestInfoForm = forwardRef<GuestInfoFormRef, GuestInfoFormProps>(
             >
               Phone number
             </label>
-            <PhoneInput
-              international
-              defaultCountry="ID"
+            <PhoneInputCustom
               value={formData.phone}
-              onChange={(value) => handleChange("phone", value || "")}
+              onChange={(value) => handleChange("phone", value)}
               onBlur={() => handleBlur("phone")}
               disabled={disabled}
               placeholder="Enter phone number *"
-              className={`phone-input-wrapper ${errors.phone ? "phone-input-error" : ""} ${disabled ? "phone-input-disabled" : ""}`}
+              defaultCountry="ID"
+              hasError={!!errors.phone && touched.phone}
             />
             {errors.phone && touched.phone && (
               <p className="text-[#fb2c36] text-sm mt-1">{errors.phone}</p>

@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, FreeMode } from "swiper/modules";
-import { GuestyListing } from "@/types/guesty";
 import PropertyBookingCard from "@/components/booking/PropertyBookingCard";
+import BookingFlowHeader from "@/components/booking/BookingFlowHeader";
+import { useListingById } from "@/lib/hooks/useGuesty";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -420,37 +421,29 @@ export default function PropertyPage() {
   const checkOut = searchParams.get("checkOut") || "";
   const minOccupancy = searchParams.get("minOccupancy") || "1";
 
-  const [listing, setListing] = useState<GuestyListing | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query for cached data fetching
+  const {
+    data: listing,
+    isLoading,
+    error,
+  } = useListingById(id);
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
-  useEffect(() => {
-    async function fetchListing() {
-      try {
-        const res = await fetch(`/api/guesty/listings/${id}`);
-        if (!res.ok) {
-          throw new Error("Failed to fetch listing");
-        }
-        const data = await res.json();
-        setListing(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    if (id) {
-      fetchListing();
-    }
-  }, [id]);
-
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
-        <div className="container mx-auto px-8 lg:px-14">
+      <main className="min-h-screen bg-surface">
+        <div className="pt-20 lg:pt-24">
+          <BookingFlowHeader
+            currentStep={2}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            guests={parseInt(minOccupancy)}
+            listingId={id}
+          />
+        </div>
+        <div className="container mx-auto px-8 lg:px-14 py-8">
           <div className="animate-pulse">
             <div className="h-[400px] lg:h-[500px] bg-gray-300 rounded-lg mb-8" />
             <div className="h-10 bg-gray-300 rounded w-2/3 mb-4" />
@@ -470,13 +463,22 @@ export default function PropertyPage() {
 
   if (error || !listing) {
     return (
-      <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
-        <div className="container mx-auto px-8 lg:px-14 text-center">
+      <main className="min-h-screen bg-surface">
+        <div className="pt-20 lg:pt-24">
+          <BookingFlowHeader
+            currentStep={2}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            guests={parseInt(minOccupancy)}
+            listingId={id}
+          />
+        </div>
+        <div className="container mx-auto px-8 lg:px-14 py-12 text-center">
           <h1 className="font-serif text-3xl text-primary-dark mb-4">
             Villa Not Found
           </h1>
           <p className="text-primary mb-8">
-            {error || "The villa you're looking for doesn't exist."}
+            {error?.message || "The villa you're looking for doesn't exist."}
           </p>
           <Link
             href={`/book?checkIn=${checkIn}&checkOut=${checkOut}&guests=${minOccupancy}`}
@@ -495,37 +497,19 @@ export default function PropertyPage() {
     null;
 
   return (
-    <main className="min-h-screen bg-surface pt-28 lg:pt-32 pb-16 lg:pb-20">
-      <div className="container mx-auto px-8 lg:px-14">
-        {/* Back Link */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Link
-            href={`/book?checkIn=${checkIn}&checkOut=${checkOut}&guests=${minOccupancy}`}
-            className="inline-flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12.5 15L7.5 10L12.5 5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Back to Search
-          </Link>
-        </motion.div>
+    <main className="min-h-screen bg-surface">
+      {/* Booking Flow Header */}
+      <div className="pt-20 lg:pt-24">
+        <BookingFlowHeader
+          currentStep={2}
+          checkIn={checkIn}
+          checkOut={checkOut}
+          guests={parseInt(minOccupancy)}
+          listingId={id}
+        />
+      </div>
 
+      <div className="container mx-auto px-8 lg:px-14 py-8 lg:py-12">
         {/* Image Gallery */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
