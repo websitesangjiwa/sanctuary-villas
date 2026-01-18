@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -420,6 +420,19 @@ export default function PropertyPage() {
   const checkIn = searchParams.get("checkIn") || "";
   const checkOut = searchParams.get("checkOut") || "";
   const minOccupancy = searchParams.get("minOccupancy") || "1";
+  const pointOfSale = searchParams.get("pointofsale");
+
+  // Track Google Vacation Rentals referrals
+  useEffect(() => {
+    if (pointOfSale === "google") {
+      console.log("[Google VR] Referral detected", {
+        listingId: id,
+        checkIn,
+        checkOut,
+        guests: minOccupancy,
+      });
+    }
+  }, [pointOfSale, id, checkIn, checkOut, minOccupancy]);
 
   // Use React Query for cached data fetching
   const {
@@ -586,6 +599,7 @@ export default function PropertyPage() {
             initialCheckIn={checkIn}
             initialCheckOut={checkOut}
             initialGuests={parseInt(minOccupancy)}
+            pointOfSale={pointOfSale || undefined}
           />
         </motion.div>
 
@@ -841,6 +855,7 @@ export default function PropertyPage() {
                 initialCheckIn={checkIn}
                 initialCheckOut={checkOut}
                 initialGuests={parseInt(minOccupancy)}
+                pointOfSale={pointOfSale || undefined}
               />
             </div>
           </motion.div>

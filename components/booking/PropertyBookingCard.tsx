@@ -13,6 +13,7 @@ interface PropertyBookingCardProps {
   initialCheckIn?: string;
   initialCheckOut?: string;
   initialGuests?: number;
+  pointOfSale?: string;
 }
 
 // Format price with currency
@@ -32,6 +33,7 @@ export default function PropertyBookingCard({
   initialCheckIn,
   initialCheckOut,
   initialGuests = 1,
+  pointOfSale,
 }: PropertyBookingCardProps) {
   const router = useRouter();
   const [guests] = useState(initialGuests);
@@ -52,7 +54,12 @@ export default function PropertyBookingCard({
   const handleBook = () => {
     if (!initialCheckIn || !initialCheckOut) return;
     // Navigate to our internal checkout page
-    router.push(`/checkout/${listingId}?checkIn=${initialCheckIn}&checkOut=${initialCheckOut}&guests=${guests}`);
+    let url = `/checkout/${listingId}?checkIn=${initialCheckIn}&checkOut=${initialCheckOut}&guests=${guests}`;
+    // Preserve pointofsale for Google VR tracking
+    if (pointOfSale) {
+      url += `&pointofsale=${pointOfSale}`;
+    }
+    router.push(url);
   };
 
   const isBookDisabled = !initialCheckIn || !initialCheckOut || (minNights > 1 && nights < minNights);
