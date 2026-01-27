@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getQuote } from '@/lib/api/guesty';
+import { getQuoteWithRatePlan } from '@/lib/api/guesty';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const quote = await getQuote({
+    // Use getQuoteWithRatePlan to include ratePlanId (required for reservations)
+    const quote = await getQuoteWithRatePlan({
       listingId,
       checkIn,
       checkOut,

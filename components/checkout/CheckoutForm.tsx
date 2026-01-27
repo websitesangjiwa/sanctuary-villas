@@ -11,6 +11,9 @@ import OrderSummary from "./OrderSummary";
 import StripeProvider from "./StripeProvider";
 import { GuestyQuoteWithRatePlan, GuestyListing } from "@/types/guesty";
 
+// Check if test mode is enabled
+const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
+
 interface CheckoutFormProps {
   listing: GuestyListing;
   quote: GuestyQuoteWithRatePlan;
@@ -124,6 +127,26 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Test Mode Banner */}
+      {isTestMode && (
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-6 h-6 text-amber-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-amber-900 font-semibold text-lg">TEST MODE</p>
+              <p className="text-amber-700 text-sm">
+                Booking will be created as &quot;Request to Book&quot; (inquiry).
+                Your card will be validated but NOT charged.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Forms */}
         <div className="space-y-6">

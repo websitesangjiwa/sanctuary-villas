@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createReservation } from '@/lib/api/guesty';
+import { createReservation, createInquiry } from '@/lib/api/guesty';
 import { GuestyReservationRequest } from '@/types/guesty';
+
+// Check if test mode is enabled via environment variable
+const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
 
 // Validation helper
 function validateReservationRequest(data: unknown): {
@@ -176,8 +179,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create reservation with Guesty
-    const reservation = await createReservation(validation.request);
+    // Use inquiry mode if test mode is enabled (creates reservation without charging)
+    // Inquiry creates a "reserved" status that needs manual confirmation in Guesty
+    let reservation;
+    if (isTestMode) {
+      console.log('[TEST MODE] Creating inquiry instead of instant booking');
+      reservation = await createInquiry(validation.request);
+    } else {
+      reservation = await createReservation(validation.request);
+    }
 
     return NextResponse.json(reservation, { status: 201 });
   } catch (error) {

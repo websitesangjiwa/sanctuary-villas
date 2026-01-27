@@ -532,3 +532,83 @@ export async function createReservation(data: GuestyReservationRequest): Promise
     },
   };
 }
+
+// Create an inquiry (Request to Book) - for testing without charging
+// Uses the inquiry endpoint which creates a "reserved" status booking
+export async function createInquiry(data: GuestyReservationRequest): Promise<GuestyReservation> {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  // Build guest object with nested address (inquiry endpoint format)
+  const guestData: Record<string, unknown> = {
+    firstName: data.guest.firstName,
+    lastName: data.guest.lastName,
+    email: data.guest.email,
+    phone: data.guest.phone,
+  };
+
+  // Add address as nested object if any address field is provided
+  if (data.guest.street || data.guest.city || data.guest.country) {
+    guestData.address = {
+      street: data.guest.street || '',
+      city: data.guest.city || '',
+      state: data.guest.state || '',
+      zipCode: data.guest.zipCode || '',
+      country: data.guest.country || '',
+      countryCode: data.guest.countryCode || '',
+    };
+  }
+
+  // Build request body for inquiry (different format from instant booking)
+  const requestBody: Record<string, unknown> = {
+    ratePlanId: data.ratePlanId,
+    guest: guestData,
+    // Include payment token for card validation (no charge in inquiry mode)
+    ccToken: data.ccToken,
+    // Policy object with nested privacy and terms (inquiry endpoint format)
+    policy: {
+      privacy: {
+        dateOfAcceptance: today,
+        isAccepted: data.consent.privacyAccepted,
+      },
+      termsAndConditions: {
+        dateOfAcceptance: today,
+        isAccepted: data.consent.termsAccepted,
+      },
+    },
+    // Keep calendar reserved indefinitely until manually confirmed
+    reservedUntil: -1,
+  };
+
+  // Use the inquiry endpoint (different from instant booking)
+  // Response format may differ from instant booking
+  const response = await guestyPost<Record<string, unknown>>(
+    `/reservations/quotes/${data.quoteId}/inquiry`,
+    requestBody
+  );
+
+  // Log response for debugging
+  console.log('[Inquiry Response]', JSON.stringify(response, null, 2));
+
+  // Parse response with fallbacks for different response formats
+  const listing = response.listing as { _id?: string } | undefined;
+  const money = response.money as { subTotalPrice?: number; currency?: string } | undefined;
+  const guest = response.guest as { firstName?: string; lastName?: string; email?: string; phone?: string } | undefined;
+
+  return {
+    _id: (response._id as string) || (response.id as string) || '',
+    confirmationCode: (response.confirmationCode as string) || '',
+    status: (response.status as GuestyReservation['status']) || 'reserved',
+    listingId: listing?._id || (response.listingId as string) || data.quoteId,
+    checkIn: (response.checkInDateLocalized as string) || (response.checkIn as string) || '',
+    checkOut: (response.checkOutDateLocalized as string) || (response.checkOut as string) || '',
+    guests: (response.guestsCount as number) || 1,
+    totalPrice: money?.subTotalPrice || 0,
+    currency: money?.currency || 'USD',
+    guest: {
+      firstName: guest?.firstName || data.guest.firstName,
+      lastName: guest?.lastName || data.guest.lastName,
+      email: guest?.email || data.guest.email,
+      phone: guest?.phone || data.guest.phone,
+    },
+  };
+}
