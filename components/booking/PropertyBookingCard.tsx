@@ -4,9 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
 import { DateRange } from "react-day-picker";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useQuote } from "@/lib/hooks/useGuesty";
-import AvailabilityCalendar from "./AvailabilityCalendar";
+import PropertyDatePickerPopup from "./PropertyDatePickerPopup";
 
 interface PropertyBookingCardProps {
   listingId: string;
@@ -56,17 +56,18 @@ export default function PropertyBookingCard({
     }
   );
 
-  // State for showing calendar
+  // State for showing calendar and which field is active
   const [showCalendar, setShowCalendar] = useState(false);
-
-  // Open calendar and reset selection for fresh date picking
-  const openCalendar = () => {
-    setSelectedRange(undefined); // Clear selection so user starts fresh
-    setShowCalendar(true);
-  };
+  const [activeField, setActiveField] = useState<"checkin" | "checkout" | null>(null);
 
   // State for guests
   const [guests, setGuests] = useState(initialGuests);
+
+  // Handle date field click
+  const handleDateFieldClick = (field: "checkin" | "checkout") => {
+    setActiveField(field);
+    setShowCalendar(true);
+  };
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -76,6 +77,7 @@ export default function PropertyBookingCard({
         !calendarRef.current.contains(event.target as Node)
       ) {
         setShowCalendar(false);
+        setActiveField(null);
       }
     };
 
@@ -126,14 +128,6 @@ export default function PropertyBookingCard({
     setGuests(newGuests);
   };
 
-  const handleRangeSelect = (range: DateRange | undefined) => {
-    setSelectedRange(range);
-    // Close calendar when both dates selected
-    if (range?.from && range?.to) {
-      setShowCalendar(false);
-    }
-  };
-
   const isBookDisabled =
     !checkInDate ||
     !checkOutDate ||
@@ -146,43 +140,91 @@ export default function PropertyBookingCard({
 
   return (
     <div className="bg-[#fffdf3] rounded-lg shadow-lg p-6 relative">
-      {/* Price per night from quote */}
-      {pricePerNight && !quoteLoading && (
-        <div className="mb-4 pb-4 border-b border-primary/20">
-          <span className="text-primary-dark text-xl font-semibold">
-            {formatPrice(pricePerNight, quote?.currency)}
-          </span>
-          <span className="text-primary text-sm"> / night</span>
-        </div>
-      )}
+      {/* Price per night from quote - always show section to prevent layout jump */}
+      <div className="mb-4 pb-4 border-b border-primary/20">
+        {quoteLoading ? (
+          <div className="flex items-center gap-1">
+            <div className="h-7 w-28 bg-primary/10 rounded animate-pulse" />
+            <span className="text-primary text-sm">/ night</span>
+          </div>
+        ) : pricePerNight ? (
+          <>
+            <span className="text-primary-dark text-xl font-semibold">
+              {formatPrice(pricePerNight, quote?.currency)}
+            </span>
+            <span className="text-primary text-sm"> / night</span>
+          </>
+        ) : (
+          <span className="text-primary text-sm">Select dates to see price</span>
+        )}
+      </div>
 
       {/* Date Selection */}
-      <div className="mb-4 pb-4 border-b border-primary/20 relative">
+      <div className="mb-4 pb-4 border-b border-primary/20 relative" ref={calendarRef}>
         <div className="space-y-3">
           {/* Check-in / Check-out Row */}
           <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={openCalendar}
-              className="text-left p-3 border border-primary/20 rounded-lg hover:border-primary/40 transition-colors bg-white"
-            >
-              <div className="text-primary text-xs font-normal mb-1">
-                Check-in
-              </div>
-              <div className="text-primary-dark text-sm font-medium">
-                {checkInDate ? format(checkInDate, "MMM d, yyyy") : "Select"}
-              </div>
-            </button>
-            <button
-              onClick={openCalendar}
-              className="text-left p-3 border border-primary/20 rounded-lg hover:border-primary/40 transition-colors bg-white"
-            >
-              <div className="text-primary text-xs font-normal mb-1">
-                Check-out
-              </div>
-              <div className="text-primary-dark text-sm font-medium">
-                {checkOutDate ? format(checkOutDate, "MMM d, yyyy") : "Select"}
-              </div>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => handleDateFieldClick("checkin")}
+                className="w-full text-left p-3 border border-primary/20 rounded-lg hover:border-primary/40 transition-colors bg-white"
+              >
+                <div className="text-primary text-xs font-normal mb-1">
+                  Check-in
+                </div>
+                <div className="text-primary-dark text-sm font-medium">
+                  {checkInDate ? format(checkInDate, "MMM d, yyyy") : "Select"}
+                </div>
+              </button>
+
+              {/* Check-in Calendar Popup */}
+              {showCalendar && activeField === "checkin" && (
+                <PropertyDatePickerPopup
+                  listingId={listingId}
+                  range={selectedRange}
+                  onSelect={setSelectedRange}
+                  onClose={() => {
+                    setShowCalendar(false);
+                    setActiveField(null);
+                  }}
+                  activeField="checkin"
+                  minNights={minNights}
+                  onOpenCheckout={() => {
+                    setActiveField("checkout");
+                    setShowCalendar(true);
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => handleDateFieldClick("checkout")}
+                className="w-full text-left p-3 border border-primary/20 rounded-lg hover:border-primary/40 transition-colors bg-white"
+              >
+                <div className="text-primary text-xs font-normal mb-1">
+                  Check-out
+                </div>
+                <div className="text-primary-dark text-sm font-medium">
+                  {checkOutDate ? format(checkOutDate, "MMM d, yyyy") : "Select"}
+                </div>
+              </button>
+
+              {/* Check-out Calendar Popup */}
+              {showCalendar && activeField === "checkout" && (
+                <PropertyDatePickerPopup
+                  listingId={listingId}
+                  range={selectedRange}
+                  onSelect={setSelectedRange}
+                  onClose={() => {
+                    setShowCalendar(false);
+                    setActiveField(null);
+                  }}
+                  activeField="checkout"
+                  minNights={minNights}
+                />
+              )}
+            </div>
           </div>
 
           {/* Nights display */}
@@ -193,36 +235,6 @@ export default function PropertyBookingCard({
             </div>
           )}
         </div>
-
-        {/* Calendar Dropdown */}
-        <AnimatePresence>
-          {showCalendar && (
-            <>
-              {/* Invisible backdrop for click-outside */}
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowCalendar(false)}
-              />
-              {/* Calendar Dropdown */}
-              <motion.div
-                ref={calendarRef}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="absolute left-0 top-full mt-2 z-50 min-w-[320px]"
-              >
-                <AvailabilityCalendar
-                  listingId={listingId}
-                  selectedRange={selectedRange}
-                  onRangeSelect={handleRangeSelect}
-                  minNights={minNights}
-                  onClose={() => setShowCalendar(false)}
-                />
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Guest Selector */}

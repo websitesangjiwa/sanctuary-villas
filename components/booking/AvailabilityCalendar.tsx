@@ -50,30 +50,46 @@ export default function AvailabilityCalendar({
     return map;
   }, [calendarData]);
 
-  // Simple handleSelect - same pattern as BookingPanel
+  // Handle date selection
   const handleSelect = (newRange: DateRange | undefined) => {
     onRangeSelect(newRange);
-    // Auto-close after both dates selected
+    // Auto-close only when a real range is selected (from !== to)
+    // react-day-picker v9 sets both from and to on first click, so we check they're different
     if (newRange?.from && newRange?.to && onClose) {
-      setTimeout(() => onClose(), 300);
+      const fromTime = newRange.from.getTime();
+      const toTime = newRange.to.getTime();
+      // Only close if dates are different (actual range selected)
+      if (fromTime !== toTime) {
+        setTimeout(() => onClose(), 300);
+      }
     }
   };
 
-  // Simple disabled logic - only unavailable dates and past dates
+  // Disabled logic with minNights enforcement
   const disabledDays = (date: Date): boolean => {
     // Past dates
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date < today) return true;
 
+    // If selecting checkout (check-in already selected), enforce minNights
+    if (selectedRange?.from && !selectedRange?.to) {
+      const minCheckoutDate = new Date(selectedRange.from);
+      minCheckoutDate.setDate(minCheckoutDate.getDate() + minNights);
+      if (date < minCheckoutDate) return true;
+    }
+
+    // If data not loaded yet, allow all future dates (don't block clicks)
+    if (!calendarData || calendarData.length === 0) return false;
+
     // Check availability status
     const dateStr = format(date, "yyyy-MM-dd");
     const dayData = calendarMap.get(dateStr);
 
-    // No data or not available = disabled
-    if (!dayData || dayData.status !== "available") return true;
+    // If date is in range but not in map, allow it
+    if (!dayData) return false;
 
-    return false;
+    return dayData.status !== "available";
   };
 
   const nights =
