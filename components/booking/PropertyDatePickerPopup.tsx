@@ -7,6 +7,8 @@ import { useCalendar } from "@/lib/hooks/useGuesty";
 import { GuestyCalendarDay } from "@/types/guesty";
 import "react-day-picker/style.css";
 
+const POPUP_TRANSITION_MS = 300;
+
 interface PropertyDatePickerPopupProps {
   listingId: string;
   range: DateRange | undefined;
@@ -56,6 +58,20 @@ export default function PropertyDatePickerPopup({
     return map;
   }, [calendarData]);
 
+  // Memoize modifiers to prevent re-renders
+  const modifiers = useMemo(() => ({
+    booked: (date: Date) => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayData = calendarMap.get(dateStr);
+      return dayData?.status === "booked" || dayData?.status === "reserved";
+    },
+    unavailable: (date: Date) => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayData = calendarMap.get(dateStr);
+      return dayData?.status === "unavailable";
+    },
+  }), [calendarMap]);
+
   const nights =
     range?.from && range?.to ? differenceInDays(range.to, range.from) : 0;
 
@@ -78,9 +94,9 @@ export default function PropertyDatePickerPopup({
         onClose();
         // Auto-open check-out popup
         if (onOpenCheckout) {
-          setTimeout(() => onOpenCheckout(), 300);
+          setTimeout(() => onOpenCheckout(), POPUP_TRANSITION_MS);
         }
-      }, 300);
+      }, POPUP_TRANSITION_MS);
     } else {
       // Update check-out date
       // Validate: check-out must be after check-in
@@ -99,7 +115,7 @@ export default function PropertyDatePickerPopup({
         onSelect(newRange);
         // Auto-close when both dates are selected
         if (range?.from) {
-          setTimeout(() => onClose(), 300);
+          setTimeout(() => onClose(), POPUP_TRANSITION_MS);
         }
       }
     }
@@ -158,20 +174,7 @@ export default function PropertyDatePickerPopup({
         disabled={isDateDisabled}
         numberOfMonths={1}
         showOutsideDays={false}
-        modifiers={{
-          booked: (date) => {
-            const dateStr = format(date, "yyyy-MM-dd");
-            const dayData = calendarMap.get(dateStr);
-            return (
-              dayData?.status === "booked" || dayData?.status === "reserved"
-            );
-          },
-          unavailable: (date) => {
-            const dateStr = format(date, "yyyy-MM-dd");
-            const dayData = calendarMap.get(dateStr);
-            return dayData?.status === "unavailable";
-          },
-        }}
+        modifiers={modifiers}
         modifiersClassNames={{
           booked: "calendar-day-booked",
           unavailable: "calendar-day-unavailable",
