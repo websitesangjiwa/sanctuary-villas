@@ -9,7 +9,8 @@ import {
   GuestyPaymentProvider,
   GuestyReservationRequest,
   GuestyReservation,
-  GuestyGuest
+  GuestyGuest,
+  GuestyCalendarDay
 } from '@/types/guesty';
 import { Redis } from '@upstash/redis';
 
@@ -611,4 +612,21 @@ export async function createInquiry(data: GuestyReservationRequest): Promise<Gue
       phone: guest?.phone || data.guest.phone,
     },
   };
+}
+
+// Calendar API - Get listing availability for a date range
+export async function getListingCalendar(
+  listingId: string,
+  from: string,
+  to: string
+): Promise<GuestyCalendarDay[]> {
+  const queryParams = new URLSearchParams({
+    from,
+    to,
+  });
+
+  return guestyFetch<GuestyCalendarDay[]>(
+    `/listings/${listingId}/calendar?${queryParams.toString()}`,
+    { revalidate: GUESTY_CONFIG.cache.listingRevalidate }
+  );
 }

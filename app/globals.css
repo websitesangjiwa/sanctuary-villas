@@ -132,3 +132,34 @@ section {
   cursor: not-allowed;
   background: #f9fafb;
 }
+
+/* Calendar Availability Styles */
+.calendar-day-booked .rdp-day_button,
+.calendar-day-unavailable .rdp-day_button {
+  text-decoration: line-through;
+  color: #9ca3af !important;
+  cursor: not-allowed;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  ) !important;
+}
+
+.calendar-day-booked .rdp-day_button:hover,
+.calendar-day-unavailable .rdp-day_button:hover {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  ) !important;
+}
+
+/* Check-in only dates - subtle indicator */
+.calendar-day-checkin-only .rdp-day_button {
+  border-left: 2px solid #8b6630;
+}

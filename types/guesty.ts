@@ -175,7 +175,7 @@ export interface GuestyReservationRequest {
 export interface GuestyReservation {
   _id: string;
   confirmationCode: string;
-  status: 'confirmed' | 'pending' | 'cancelled' | 'inquiry';
+  status: 'confirmed' | 'pending' | 'cancelled' | 'inquiry' | 'reserved';
   listingId: string;
   checkIn: string;
   checkOut: string;
@@ -183,4 +183,14 @@ export interface GuestyReservation {
   totalPrice: number;
   currency: string;
   guest: GuestyGuest;
+}
+
+// Calendar availability types
+export interface GuestyCalendarDay {
+  date: string;
+  minNights: number;
+  isBaseMinNights: boolean;
+  status: 'available' | 'unavailable' | 'reserved' | 'booked';
+  cta: boolean; // Can check-in
+  ctd: boolean; // Can check-out
 }

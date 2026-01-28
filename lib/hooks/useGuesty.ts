@@ -5,6 +5,7 @@ import {
   GuestyListing,
   GuestyListingsResponse,
   GuestyQuoteWithRatePlan,
+  GuestyCalendarDay,
 } from "@/types/guesty";
 
 // ============================================
@@ -68,6 +69,22 @@ async function fetchQuote(params: {
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.error || `Failed to fetch quote: ${res.status}`);
+  }
+  return res.json();
+}
+
+async function fetchCalendar(params: {
+  listingId: string;
+  from: string;
+  to: string;
+}): Promise<GuestyCalendarDay[]> {
+  const searchParams = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+  });
+  const res = await fetch(`/api/guesty/calendar/${params.listingId}?${searchParams}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch calendar: ${res.status}`);
   }
   return res.json();
 }
@@ -153,5 +170,32 @@ export function useQuote(params: {
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     retry: 1, // Only retry once for quotes (they might legitimately fail)
+  });
+}
+
+/**
+ * Fetch listing calendar availability data
+ * - staleTime: 5 minutes (availability doesn't change too frequently)
+ * - Only enabled when all required params are present
+ * - Returns array of days with availability status
+ */
+export function useCalendar(params: {
+  listingId?: string;
+  from?: string;
+  to?: string;
+}) {
+  const { listingId, from, to } = params;
+
+  return useQuery({
+    queryKey: ["calendar", listingId, from, to],
+    queryFn: () =>
+      fetchCalendar({
+        listingId: listingId!,
+        from: from!,
+        to: to!,
+      }),
+    enabled: !!(listingId && from && to),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
