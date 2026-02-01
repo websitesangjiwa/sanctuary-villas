@@ -31,6 +31,8 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
   const [guestInfoValid, setGuestInfoValid] = useState(false);
   const [paymentValid, setPaymentValid] = useState(false);
   const [consentValid, setConsentValid] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,33 +77,70 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
       // Step 2: Charge via Stripe FIRST (only in production mode)
       // This ensures we don't create reservations for failed payments
       if (!isTestMode) {
-        const chargeResponse = await fetch("/api/checkout/charge", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            paymentMethodId: ccToken,
-            amount: quote.totalPrice,
-            currency: quote.currency,
-            listingId: listing._id,
-            description: `Booking: ${listing.title} (${quote.checkIn} - ${quote.checkOut})`,
-          }),
-        });
+        // Helper function to attempt charge with retry logic
+        const attemptCharge = async (attempt: number): Promise<string> => {
+          setRetryCount(attempt);
 
-        const chargeData = await chargeResponse.json();
+          const chargeResponse = await fetch("/api/checkout/charge", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              paymentMethodId: ccToken,
+              amount: quote.totalPrice,
+              currency: quote.currency,
+              listingId: listing._id,
+              description: `Booking: ${listing.title} (${quote.checkIn} - ${quote.checkOut})`,
+            }),
+          });
 
-        if (!chargeResponse.ok) {
-          // Payment failed - show error and stop (no reservation created)
-          throw new Error(chargeData.error || "Payment failed. Please try again.");
-        }
+          const chargeData = await chargeResponse.json();
 
-        // Handle 3D Secure / additional authentication
-        if (chargeData.requiresAction) {
-          throw new Error("Additional authentication required. Please try a different card.");
-        }
+          // Handle 3D Secure / additional authentication first
+          if (chargeData.requiresAction && chargeData.clientSecret) {
+            console.log("[Checkout] 3D Secure authentication required");
 
-        paymentIntentId = chargeData.paymentIntentId;
+            if (!paymentFormRef.current) {
+              throw new Error("Payment form not available. Please refresh and try again.");
+            }
+
+            // Show 3D Secure authentication modal via Stripe.js
+            // confirmCardPayment handles 3DS and completes the payment in one step
+            const authResult = await paymentFormRef.current.handleCardAction(
+              chargeData.clientSecret
+            );
+
+            if (!authResult.success) {
+              throw new Error(
+                authResult.error || "Card authentication failed. Please try again."
+              );
+            }
+
+            console.log("[Checkout] 3D Secure payment completed:", authResult.paymentIntentId);
+            return authResult.paymentIntentId!;
+          }
+
+          // Check for payment failure
+          if (!chargeResponse.ok) {
+            // If retryable and haven't exceeded max retries, wait and retry
+            if (chargeData.retryable && attempt < MAX_RETRIES) {
+              console.log(`[Checkout] Retryable error (attempt ${attempt + 1}/${MAX_RETRIES}):`, chargeData.declineCode);
+              // Wait 1 second before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              return attemptCharge(attempt + 1);
+            }
+
+            // Not retryable or max retries exceeded
+            throw new Error(chargeData.error || "Payment failed. Please try again.");
+          }
+
+          return chargeData.paymentIntentId;
+        };
+
+        // Start charge attempt
+        paymentIntentId = await attemptCharge(0);
+        setRetryCount(0); // Reset retry count on success
         console.log("[Checkout] Payment successful:", paymentIntentId);
       }
 
@@ -265,6 +304,27 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
               onValidationChange={setConsentValid}
             />
           </div>
+
+          {/* Retry Notice */}
+          {retryCount > 0 && isSubmitting && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-amber-50 border border-amber-200 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="animate-spin h-5 w-5 border-2 border-amber-500 border-t-transparent rounded-full shrink-0" />
+                <div>
+                  <p className="text-amber-700 text-sm font-medium">
+                    Retrying payment...
+                  </p>
+                  <p className="text-amber-600 text-sm">
+                    Attempt {retryCount + 1} of {MAX_RETRIES + 1}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Error Message */}
           {error && (

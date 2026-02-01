@@ -8,6 +8,11 @@ import Image from "next/image";
 export interface PaymentFormRef {
   createPaymentMethod: () => Promise<string | null>;
   isComplete: () => boolean;
+  handleCardAction: (clientSecret: string) => Promise<{
+    success: boolean;
+    paymentIntentId?: string;
+    error?: string;
+  }>;
 }
 
 interface PaymentFormProps {
@@ -63,6 +68,59 @@ const PaymentForm = forwardRef<PaymentFormRef, PaymentFormProps>(
         return paymentMethod?.id || null;
       },
       isComplete: () => cardComplete && !error,
+      handleCardAction: async (clientSecret: string) => {
+        if (!stripe) {
+          return { success: false, error: "Payment system not ready" };
+        }
+
+        try {
+          // Use confirmCardPayment since we created PaymentIntent with confirm: true
+          // This triggers the 3D Secure authentication modal and completes the payment
+          const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret);
+
+          if (confirmError) {
+            return {
+              success: false,
+              error: confirmError.message || "Card authentication failed",
+            };
+          }
+
+          // Payment succeeded after 3DS authentication
+          if (paymentIntent?.status === "succeeded") {
+            return {
+              success: true,
+              paymentIntentId: paymentIntent.id,
+            };
+          }
+
+          // Payment still requires action (user cancelled or failed 3DS)
+          if (paymentIntent?.status === "requires_action") {
+            return {
+              success: false,
+              error: "Authentication was not completed. Please try again.",
+            };
+          }
+
+          // Payment requires new payment method (card declined after 3DS)
+          if (paymentIntent?.status === "requires_payment_method") {
+            return {
+              success: false,
+              error: "Your card was declined. Please try a different card.",
+            };
+          }
+
+          return {
+            success: false,
+            error: "Payment could not be completed. Please try again.",
+          };
+        } catch (err) {
+          console.error("confirmCardPayment error:", err);
+          return {
+            success: false,
+            error: err instanceof Error ? err.message : "Authentication failed",
+          };
+        }
+      },
     }));
 
     return (
