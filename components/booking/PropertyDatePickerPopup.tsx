@@ -38,9 +38,19 @@ export default function PropertyDatePickerPopup({
     return startOfMonth(new Date());
   });
 
-  // Calculate date range to fetch (current month + 3 months ahead)
-  const fromDate = format(month, "yyyy-MM-dd");
-  const toDate = format(addMonths(month, 3), "yyyy-MM-dd");
+  // Calculate date range to fetch
+  // For checkout mode: fetch from CHECK-IN date to ensure we have availability data
+  // for the entire potential booking range (not just the currently viewed month)
+  const fromDate = useMemo(() => {
+    if (activeField === "checkout" && range?.from) {
+      // Start from check-in date to capture any unavailable dates between check-in and checkout
+      return format(range.from, "yyyy-MM-dd");
+    }
+    return format(month, "yyyy-MM-dd");
+  }, [activeField, range?.from, month]);
+
+  // Fetch 6 months ahead to cover longer stays
+  const toDate = format(addMonths(new Date(fromDate), 6), "yyyy-MM-dd");
 
   // Fetch calendar data
   const { data: calendarData, isLoading } = useCalendar({
@@ -57,6 +67,27 @@ export default function PropertyDatePickerPopup({
     });
     return map;
   }, [calendarData]);
+
+  // Calculate the maximum checkout date (day before first unavailable date after check-in)
+  const maxCheckoutDate = useMemo(() => {
+    if (activeField !== "checkout" || !range?.from || !calendarData) return null;
+
+    const checkInStr = format(range.from, "yyyy-MM-dd");
+
+    // Sort calendar data by date
+    const sortedDays = [...calendarData].sort((a, b) => a.date.localeCompare(b.date));
+
+    // Find the first unavailable date AFTER check-in
+    for (const day of sortedDays) {
+      if (day.date > checkInStr && day.status !== "available") {
+        // Return the day before the first unavailable date
+        const unavailableDate = new Date(day.date + "T00:00:00");
+        return unavailableDate;
+      }
+    }
+
+    return null; // No blocking reservation found
+  }, [activeField, range?.from, calendarData]);
 
   // Memoize modifiers to prevent re-renders
   const modifiers = useMemo(() => ({
@@ -128,24 +159,29 @@ export default function PropertyDatePickerPopup({
     today.setHours(0, 0, 0, 0);
     if (date < today) return true;
 
-    // For checkout, enforce minNights
+    // For checkout mode
     if (activeField === "checkout" && range?.from) {
+      // Enforce minNights
       const minCheckoutDate = new Date(range.from);
       minCheckoutDate.setDate(minCheckoutDate.getDate() + minNights);
       if (date < minCheckoutDate) return true;
+
+      // Disable dates at or after the first unavailable date (prevents spanning over bookings)
+      if (maxCheckoutDate && date >= maxCheckoutDate) return true;
     }
 
     // If data not loaded yet, allow all future dates
     if (!calendarData || calendarData.length === 0) return false;
 
-    // Check availability status
-    const dateStr = format(date, "yyyy-MM-dd");
-    const dayData = calendarMap.get(dateStr);
+    // Check availability status for check-in mode
+    if (activeField === "checkin") {
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayData = calendarMap.get(dateStr);
+      if (!dayData) return false;
+      return dayData.status !== "available";
+    }
 
-    // If date is in range but not in map, allow it
-    if (!dayData) return false;
-
-    return dayData.status !== "available";
+    return false;
   };
 
   return (

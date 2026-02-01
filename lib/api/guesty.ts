@@ -18,6 +18,7 @@ import { Redis } from '@upstash/redis';
 const GUESTY_CONFIG = {
   tokenUrl: 'https://booking.guesty.com/oauth2/token',
   apiUrl: 'https://booking.guesty.com/api',
+  openApiUrl: 'https://open-api.guesty.com/v1', // Open API for payment recording
   bookingUrl: 'https://sanctuaryvillas.guestybookings.com',
   cache: {
     // Token refresh buffer: 5 minutes before expiry (per Guesty docs)
@@ -448,88 +449,84 @@ export async function getPaymentProvider(listingId: string): Promise<GuestyPayme
   };
 }
 
-// Reservation API - Create a reservation with payment
-interface GuestyReservationRawResponse {
-  _id: string;
-  confirmationCode: string;
-  status: string;
-  listing: {
-    _id: string;
-  };
-  checkInDateLocalized: string;
-  checkOutDateLocalized: string;
-  guestsCount: number;
-  money: {
-    subTotalPrice: number;
-    currency: string;
-  };
-  guest: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  };
-}
-
+// Reservation API - Create an instant reservation with payment
+// Uses POST /reservations/quotes/{quoteId}/instant endpoint
 export async function createReservation(data: GuestyReservationRequest): Promise<GuestyReservation> {
-  // Build guest object with optional billing address fields
-  const guestData: Record<string, string | undefined> = {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  // Build guest object with nested address (instant endpoint format)
+  const guestData: Record<string, unknown> = {
     firstName: data.guest.firstName,
     lastName: data.guest.lastName,
     email: data.guest.email,
     phone: data.guest.phone,
   };
 
-  // Add billing address fields if provided
-  if (data.guest.street) guestData.street = data.guest.street;
-  if (data.guest.city) guestData.city = data.guest.city;
-  if (data.guest.state) guestData.state = data.guest.state;
-  if (data.guest.zipCode) guestData.zipCode = data.guest.zipCode;
-  if (data.guest.country) guestData.country = data.guest.country;
-  if (data.guest.countryCode) guestData.countryCode = data.guest.countryCode;
+  // Add address as nested object if any address field is provided
+  if (data.guest.street || data.guest.city || data.guest.country) {
+    guestData.address = {
+      street: data.guest.street || '',
+      city: data.guest.city || '',
+      state: data.guest.state || '',
+      zipCode: data.guest.zipCode || '',
+      country: data.guest.country || '',
+      countryCode: data.guest.countryCode || '',
+    };
+  }
 
-  // Build request body
+  // Build request body for instant booking
+  // ccToken at top level, policy wrapper for consent
+  // Note: 'notes' field is NOT supported by the instant booking endpoint
   const requestBody: Record<string, unknown> = {
-    quoteId: data.quoteId,
     ratePlanId: data.ratePlanId,
     guest: guestData,
-    payment: {
-      ccToken: data.ccToken,
-    },
-    // REQUIRED consent fields for Guesty API
-    privacy: {
-      isAccepted: data.consent.privacyAccepted,
-    },
-    termsAndConditions: {
-      isAccepted: data.consent.termsAccepted,
-    },
-    marketing: {
-      isAccepted: data.consent.marketingAccepted || false,
+    // Payment token at top level (not inside payment object)
+    ccToken: data.ccToken,
+    // Policy object with nested privacy, termsAndConditions, and marketing
+    policy: {
+      privacy: {
+        dateOfAcceptance: today,
+        isAccepted: data.consent.privacyAccepted,
+      },
+      termsAndConditions: {
+        dateOfAcceptance: today,
+        isAccepted: data.consent.termsAccepted,
+      },
+      marketing: {
+        isAccepted: data.consent.marketingAccepted || false,
+      },
     },
   };
 
-  // Add special request if provided
-  if (data.specialRequest) {
-    requestBody.notes = data.specialRequest;
-  }
+  // Use the instant booking endpoint (charges card immediately)
+  const response = await guestyPost<Record<string, unknown>>(
+    `/reservations/quotes/${data.quoteId}/instant`,
+    requestBody
+  );
 
-  const response = await guestyPost<GuestyReservationRawResponse>('/reservations', requestBody);
+  // Log response for debugging
+  console.log('[Instant Booking Response]', JSON.stringify(response, null, 2));
+
+  // Parse response with fallbacks for different response formats
+  const listing = response.listing as { _id?: string } | undefined;
+  const money = response.money as { subTotalPrice?: number; currency?: string } | undefined;
+  const guest = response.guest as { firstName?: string; lastName?: string; email?: string; phone?: string } | undefined;
 
   return {
-    _id: response._id,
-    confirmationCode: response.confirmationCode,
-    status: response.status as GuestyReservation['status'],
-    listingId: response.listing._id,
-    checkIn: response.checkInDateLocalized,
-    checkOut: response.checkOutDateLocalized,
-    guests: response.guestsCount,
-    totalPrice: response.money.subTotalPrice,
-    currency: response.money.currency,
+    _id: (response._id as string) || (response.id as string) || '',
+    confirmationCode: (response.confirmationCode as string) || '',
+    status: (response.status as GuestyReservation['status']) || 'confirmed',
+    listingId: listing?._id || (response.listingId as string) || data.quoteId,
+    checkIn: (response.checkInDateLocalized as string) || (response.checkIn as string) || '',
+    checkOut: (response.checkOutDateLocalized as string) || (response.checkOut as string) || '',
+    guests: (response.guestsCount as number) || 1,
+    totalPrice: money?.subTotalPrice || 0,
+    currency: money?.currency || 'USD',
     guest: {
-      firstName: response.guest.firstName,
-      lastName: response.guest.lastName,
-      email: response.guest.email,
-      phone: response.guest.phone,
+      firstName: guest?.firstName || data.guest.firstName,
+      lastName: guest?.lastName || data.guest.lastName,
+      email: guest?.email || data.guest.email,
+      phone: guest?.phone || data.guest.phone,
     },
   };
 }
@@ -629,4 +626,60 @@ export async function getListingCalendar(
     `/listings/${listingId}/calendar?${queryParams.toString()}`,
     { revalidate: GUESTY_CONFIG.cache.listingRevalidate }
   );
+}
+
+// Record Payment in Guesty Open API
+// Used to mark externally-collected payments (via Stripe) as paid in Guesty Dashboard
+export interface RecordPaymentParams {
+  reservationId: string;
+  amount: number;
+  currency: string;
+  paymentIntentId: string;
+  paidAt?: Date;
+}
+
+export async function recordPaymentInGuesty(params: RecordPaymentParams): Promise<void> {
+  // Use the same token - Guesty Open API accepts the Booking Engine OAuth token
+  const token = await getGuestyToken();
+
+  const requestBody = {
+    paymentMethod: {
+      method: 'STRIPE',
+    },
+    amount: params.amount,
+    currency: params.currency.toUpperCase(),
+    paidAt: (params.paidAt || new Date()).toISOString(),
+    note: `Paid via Stripe - PaymentIntent: ${params.paymentIntentId}`,
+  };
+
+  console.log('[Guesty Open API] Recording payment for reservation:', params.reservationId);
+  console.log('[Guesty Open API] Payment details:', {
+    amount: params.amount,
+    currency: params.currency,
+    paymentIntentId: params.paymentIntentId,
+  });
+
+  const response = await fetch(
+    `${GUESTY_CONFIG.openApiUrl}/reservations/${params.reservationId}/payments`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[Guesty Open API] Failed to record payment:', response.status, errorText);
+    // Don't throw - payment was already collected via Stripe, just log the failure
+    // The reservation is still valid, just shows as "unpaid" in Guesty Dashboard
+    return;
+  }
+
+  const result = await response.json();
+  console.log('[Guesty Open API] Payment recorded successfully:', result);
 }

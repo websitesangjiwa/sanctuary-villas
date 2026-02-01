@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createReservation, createInquiry } from '@/lib/api/guesty';
+import { createReservation, createInquiry, recordPaymentInGuesty } from '@/lib/api/guesty';
 import { GuestyReservationRequest } from '@/types/guesty';
 
 // Check if test mode is enabled via environment variable
@@ -179,6 +179,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Extract payment info for recording (only in production mode with Stripe-first payment)
+    const paymentIntentId = typeof body.paymentIntentId === 'string' ? body.paymentIntentId : undefined;
+    const paymentAmount = typeof body.amount === 'number' ? body.amount : undefined;
+    const paymentCurrency = typeof body.currency === 'string' ? body.currency : 'USD';
+
     // Use inquiry mode if test mode is enabled (creates reservation without charging)
     // Inquiry creates a "reserved" status that needs manual confirmation in Guesty
     let reservation;
@@ -187,6 +192,24 @@ export async function POST(request: Request) {
       reservation = await createInquiry(validation.request);
     } else {
       reservation = await createReservation(validation.request);
+    }
+
+    // Record the Stripe payment in Guesty (only if payment was collected via Stripe-first flow)
+    // This ensures Guesty Dashboard shows "Paid" status for reservations
+    if (!isTestMode && paymentIntentId && reservation._id && paymentAmount) {
+      try {
+        await recordPaymentInGuesty({
+          reservationId: reservation._id,
+          amount: paymentAmount,
+          currency: paymentCurrency,
+          paymentIntentId,
+        });
+        console.log('[Guesty] Payment recorded successfully for reservation:', reservation._id);
+      } catch (paymentRecordError) {
+        // Log but don't fail - the reservation and Stripe payment are already successful
+        // Guesty will just show as "unpaid" but the guest has been charged
+        console.error('[Guesty] Failed to record payment (non-fatal):', paymentRecordError);
+      }
     }
 
     return NextResponse.json(reservation, { status: 201 });

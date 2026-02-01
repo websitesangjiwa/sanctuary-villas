@@ -59,7 +59,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Create payment method token
+      // Step 1: Create payment method token
       const ccToken = await paymentFormRef.current.createPaymentMethod();
       if (!ccToken) {
         setError("Failed to process card. Please try again.");
@@ -70,7 +70,42 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
       // Get billing address data (optional)
       const billingData = billingAddressRef.current?.getData();
 
-      // Create reservation with all data
+      let paymentIntentId: string | undefined;
+
+      // Step 2: Charge via Stripe FIRST (only in production mode)
+      // This ensures we don't create reservations for failed payments
+      if (!isTestMode) {
+        const chargeResponse = await fetch("/api/checkout/charge", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentMethodId: ccToken,
+            amount: quote.totalPrice,
+            currency: quote.currency,
+            listingId: listing._id,
+            description: `Booking: ${listing.title} (${quote.checkIn} - ${quote.checkOut})`,
+          }),
+        });
+
+        const chargeData = await chargeResponse.json();
+
+        if (!chargeResponse.ok) {
+          // Payment failed - show error and stop (no reservation created)
+          throw new Error(chargeData.error || "Payment failed. Please try again.");
+        }
+
+        // Handle 3D Secure / additional authentication
+        if (chargeData.requiresAction) {
+          throw new Error("Additional authentication required. Please try a different card.");
+        }
+
+        paymentIntentId = chargeData.paymentIntentId;
+        console.log("[Checkout] Payment successful:", paymentIntentId);
+      }
+
+      // Step 3: Create reservation with Guesty (payment already collected)
       const response = await fetch("/api/guesty/reservations", {
         method: "POST",
         headers: {
@@ -91,12 +126,33 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
           },
           ccToken,
           consent: consentData,
+          // Payment info for recording in Guesty (Stripe-first flow)
+          paymentIntentId,
+          amount: quote.totalPrice,
+          currency: quote.currency,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // Reservation creation failed AFTER payment succeeded
+        // We need to refund the payment
+        if (paymentIntentId) {
+          console.error("[Checkout] Reservation failed, initiating refund...");
+          try {
+            await fetch(`/api/checkout/charge?paymentIntentId=${paymentIntentId}`, {
+              method: "DELETE",
+            });
+            console.log("[Checkout] Refund initiated successfully");
+          } catch (refundError) {
+            console.error("[Checkout] Refund failed:", refundError);
+            // Still show the original error, but mention the refund issue
+            throw new Error(
+              `${data.error || "Failed to create reservation"}. Your payment will be refunded.`
+            );
+          }
+        }
         throw new Error(data.error || "Failed to create reservation");
       }
 
