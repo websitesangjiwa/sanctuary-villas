@@ -87,6 +87,10 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
             amount: quote.totalPrice,
             currency: quote.currency,
             listingId: listing._id,
+            // Include booking details for server-side price verification
+            checkIn: quote.checkIn,
+            checkOut: quote.checkOut,
+            guests: quote.guests,
             description: `Booking: ${listing.title} (${quote.checkIn} - ${quote.checkOut})`,
           }),
         });

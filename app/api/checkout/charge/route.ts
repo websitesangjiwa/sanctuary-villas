@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getPaymentProvider } from '@/lib/api/guesty';
+import { getPaymentProvider, getQuote } from '@/lib/api/guesty';
+import { checkRateLimit, checkoutRateLimiter } from '@/lib/utils/rateLimit';
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+// Maximum allowed amount (prevent unreasonably high charges)
+const MAX_CHARGE_AMOUNT = 100000; // $100,000 USD
 
 interface ChargeRequest {
   paymentMethodId: string;
   amount: number;
   currency: string;
   listingId: string;
+  // Booking details for server-side validation
+  checkIn: string;
+  checkOut: string;
+  guests: number;
   description?: string;
 }
 
@@ -38,12 +46,36 @@ function validateChargeRequest(data: unknown): {
     return { valid: false, error: 'Valid amount is required' };
   }
 
+  // Prevent unreasonably high charges
+  if (body.amount > MAX_CHARGE_AMOUNT) {
+    return { valid: false, error: 'Amount exceeds maximum allowed' };
+  }
+
   if (!body.currency || typeof body.currency !== 'string') {
     return { valid: false, error: 'currency is required' };
   }
 
   if (!body.listingId || typeof body.listingId !== 'string') {
     return { valid: false, error: 'listingId is required' };
+  }
+
+  // Validate booking parameters (required for server-side amount verification)
+  if (!body.checkIn || typeof body.checkIn !== 'string') {
+    return { valid: false, error: 'checkIn is required' };
+  }
+
+  if (!body.checkOut || typeof body.checkOut !== 'string') {
+    return { valid: false, error: 'checkOut is required' };
+  }
+
+  // Validate date format (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(body.checkIn) || !dateRegex.test(body.checkOut)) {
+    return { valid: false, error: 'Invalid date format' };
+  }
+
+  if (typeof body.guests !== 'number' || body.guests < 1 || body.guests > 50) {
+    return { valid: false, error: 'Valid guest count is required (1-50)' };
   }
 
   return {
@@ -53,6 +85,9 @@ function validateChargeRequest(data: unknown): {
       amount: body.amount,
       currency: body.currency,
       listingId: body.listingId,
+      checkIn: body.checkIn,
+      checkOut: body.checkOut,
+      guests: Math.floor(body.guests),
       description: typeof body.description === 'string' ? body.description : undefined,
     },
   };
@@ -137,9 +172,14 @@ function getStripeErrorMessage(error: Stripe.errors.StripeError): string {
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await checkRateLimit(request, checkoutRateLimiter);
+    if (!rateLimitResult.success) {
+      return rateLimitResult.response;
+    }
+
     // Check if Stripe is configured
     if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('STRIPE_SECRET_KEY is not configured');
       return NextResponse.json(
         { error: 'Payment service not configured' },
         { status: 500 }
@@ -157,7 +197,40 @@ export async function POST(request: Request) {
       );
     }
 
-    const { paymentMethodId, amount, currency, listingId, description } = validation.request;
+    const { paymentMethodId, amount, currency, listingId, checkIn, checkOut, guests, description } = validation.request;
+
+    // Server-side quote verification: re-fetch the quote and verify the amount
+    try {
+      const serverQuote = await getQuote({
+        listingId,
+        checkIn,
+        checkOut,
+        guests,
+      });
+
+      // Allow small tolerance for rounding (0.01 = 1 cent)
+      const amountDifference = Math.abs(serverQuote.totalPrice - amount);
+      if (amountDifference > 0.01) {
+        return NextResponse.json(
+          { error: 'Quote has changed. Please refresh and try again.' },
+          { status: 400 }
+        );
+      }
+
+      // Verify currency matches
+      if (serverQuote.currency.toLowerCase() !== currency.toLowerCase()) {
+        return NextResponse.json(
+          { error: 'Currency mismatch. Please refresh and try again.' },
+          { status: 400 }
+        );
+      }
+    } catch (quoteError) {
+      // If we can't verify the quote, reject the payment for safety
+      return NextResponse.json(
+        { error: 'Unable to verify booking price. Please try again.' },
+        { status: 400 }
+      );
+    }
 
     // Get payment provider info for the listing (may include Stripe Connect account)
     let stripeAccountId: string | undefined;
@@ -199,24 +272,7 @@ export async function POST(request: Request) {
     //   paymentIntentParams.transfer_data = { destination: stripeAccountId };
     // }
 
-    console.log('[Stripe] Creating PaymentIntent:', {
-      amount: amountInCents,
-      currency,
-      listingId,
-      hasConnectedAccount: !!stripeAccountId,
-    });
-
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
-
-    console.log('[Stripe] PaymentIntent created:', {
-      id: paymentIntent.id,
-      status: paymentIntent.status,
-      lastPaymentError: paymentIntent.last_payment_error ? {
-        code: paymentIntent.last_payment_error.code,
-        declineCode: paymentIntent.last_payment_error.decline_code,
-        message: paymentIntent.last_payment_error.message,
-      } : null,
-    });
 
     // Check payment status
     if (paymentIntent.status === 'succeeded') {
@@ -281,8 +337,6 @@ export async function POST(request: Request) {
       { status: 402 }
     );
   } catch (error) {
-    console.error('[Stripe] Error creating charge:', error);
-
     // Handle Stripe-specific errors
     if (error instanceof Stripe.errors.StripeError) {
       const userMessage = getStripeErrorMessage(error);
@@ -292,8 +346,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generic error
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Generic error - don't expose internal details
     return NextResponse.json(
       { error: 'Payment processing error. Please try again.' },
       { status: 500 }
@@ -302,8 +355,15 @@ export async function POST(request: Request) {
 }
 
 // Endpoint to refund a payment (used if reservation creation fails)
+// Security: Only allows refunds for payments made in the last 5 minutes
 export async function DELETE(request: Request) {
   try {
+    // Rate limiting check (use strict checkout limiter)
+    const rateLimitResult = await checkRateLimit(request, checkoutRateLimiter);
+    if (!rateLimitResult.success) {
+      return rateLimitResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const paymentIntentId = searchParams.get('paymentIntentId');
 
@@ -314,15 +374,37 @@ export async function DELETE(request: Request) {
       );
     }
 
-    console.log('[Stripe] Creating refund for:', paymentIntentId);
+    // Validate payment intent ID format
+    if (!paymentIntentId.startsWith('pi_')) {
+      return NextResponse.json(
+        { error: 'Invalid payment intent format' },
+        { status: 400 }
+      );
+    }
+
+    // Retrieve the payment intent to verify it's recent and owned by us
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    // Security check: Only allow refunds for payments made in the last 5 minutes
+    // This prevents abuse of the refund endpoint
+    const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 300;
+    if (paymentIntent.created < fiveMinutesAgo) {
+      return NextResponse.json(
+        { error: 'Refund window has expired. Please contact support.' },
+        { status: 400 }
+      );
+    }
+
+    // Only allow refunds for succeeded payments
+    if (paymentIntent.status !== 'succeeded') {
+      return NextResponse.json(
+        { error: 'Payment cannot be refunded in its current state' },
+        { status: 400 }
+      );
+    }
 
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
-    });
-
-    console.log('[Stripe] Refund created:', {
-      id: refund.id,
-      status: refund.status,
     });
 
     return NextResponse.json({
@@ -331,11 +413,10 @@ export async function DELETE(request: Request) {
       status: refund.status,
     });
   } catch (error) {
-    console.error('[Stripe] Error creating refund:', error);
-
     if (error instanceof Stripe.errors.StripeError) {
+      // Don't expose internal error details
       return NextResponse.json(
-        { error: error.message },
+        { error: 'Refund could not be processed' },
         { status: 400 }
       );
     }

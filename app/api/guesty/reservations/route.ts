@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createReservation, recordPaymentInGuesty } from '@/lib/api/guesty';
 import { GuestyReservationRequest } from '@/types/guesty';
+import { checkRateLimit, reservationRateLimiter } from '@/lib/utils/rateLimit';
 
 // Validation helper
 function validateReservationRequest(data: unknown): {
@@ -165,6 +166,12 @@ function getUserFriendlyError(error: string): string {
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting check (strict for reservations)
+    const rateLimitResult = await checkRateLimit(request, reservationRateLimiter);
+    if (!rateLimitResult.success) {
+      return rateLimitResult.response;
+    }
+
     const body = await request.json();
 
     // Validate request
@@ -194,18 +201,14 @@ export async function POST(request: Request) {
           currency: paymentCurrency,
           paymentIntentId,
         });
-        console.log('[Guesty] Payment recorded successfully for reservation:', reservation._id);
-      } catch (paymentRecordError) {
-        // Log but don't fail - the reservation and Stripe payment are already successful
+      } catch {
+        // Non-fatal error - the reservation and Stripe payment are already successful
         // Guesty will just show as "unpaid" but the guest has been charged
-        console.error('[Guesty] Failed to record payment (non-fatal):', paymentRecordError);
       }
     }
 
     return NextResponse.json(reservation, { status: 201 });
   } catch (error) {
-    console.error('Error creating reservation:', error);
-
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const userFriendlyError = getUserFriendlyError(errorMessage);
 
