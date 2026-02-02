@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { GuestyListing } from "@/types/guesty";
+import { formatPrice } from "@/lib/utils/formatters";
 
 interface VillaListProps {
   listings: GuestyListing[];
@@ -71,14 +72,6 @@ export default function VillaList({
           ? Object.values(nightlyRates).reduce((sum, rate) => sum + rate, 0) / Object.values(nightlyRates).length
           : 0;
         const currency = listing.prices?.currency || "USD";
-
-        const formatPrice = (amount: number, curr: string) => {
-          return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: curr,
-            minimumFractionDigits: 0,
-          }).format(amount);
-        };
 
         return (
           <motion.div

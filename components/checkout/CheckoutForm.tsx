@@ -11,9 +11,6 @@ import OrderSummary from "./OrderSummary";
 import StripeProvider from "./StripeProvider";
 import { GuestyQuoteWithRatePlan, GuestyListing } from "@/types/guesty";
 
-// Check if test mode is enabled
-const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
-
 interface CheckoutFormProps {
   listing: GuestyListing;
   quote: GuestyQuoteWithRatePlan;
@@ -74,75 +71,68 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
 
       let paymentIntentId: string | undefined;
 
-      // Step 2: Charge via Stripe FIRST (only in production mode)
+      // Step 2: Charge via Stripe FIRST
       // This ensures we don't create reservations for failed payments
-      if (!isTestMode) {
-        // Helper function to attempt charge with retry logic
-        const attemptCharge = async (attempt: number): Promise<string> => {
-          setRetryCount(attempt);
+      // Helper function to attempt charge with retry logic
+      const attemptCharge = async (attempt: number): Promise<string> => {
+        setRetryCount(attempt);
 
-          const chargeResponse = await fetch("/api/checkout/charge", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              paymentMethodId: ccToken,
-              amount: quote.totalPrice,
-              currency: quote.currency,
-              listingId: listing._id,
-              description: `Booking: ${listing.title} (${quote.checkIn} - ${quote.checkOut})`,
-            }),
-          });
+        const chargeResponse = await fetch("/api/checkout/charge", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentMethodId: ccToken,
+            amount: quote.totalPrice,
+            currency: quote.currency,
+            listingId: listing._id,
+            description: `Booking: ${listing.title} (${quote.checkIn} - ${quote.checkOut})`,
+          }),
+        });
 
-          const chargeData = await chargeResponse.json();
+        const chargeData = await chargeResponse.json();
 
-          // Handle 3D Secure / additional authentication first
-          if (chargeData.requiresAction && chargeData.clientSecret) {
-            console.log("[Checkout] 3D Secure authentication required");
+        // Handle 3D Secure / additional authentication first
+        if (chargeData.requiresAction && chargeData.clientSecret) {
+          if (!paymentFormRef.current) {
+            throw new Error("Payment form not available. Please refresh and try again.");
+          }
 
-            if (!paymentFormRef.current) {
-              throw new Error("Payment form not available. Please refresh and try again.");
-            }
+          // Show 3D Secure authentication modal via Stripe.js
+          // confirmCardPayment handles 3DS and completes the payment in one step
+          const authResult = await paymentFormRef.current.handleCardAction(
+            chargeData.clientSecret
+          );
 
-            // Show 3D Secure authentication modal via Stripe.js
-            // confirmCardPayment handles 3DS and completes the payment in one step
-            const authResult = await paymentFormRef.current.handleCardAction(
-              chargeData.clientSecret
+          if (!authResult.success) {
+            throw new Error(
+              authResult.error || "Card authentication failed. Please try again."
             );
-
-            if (!authResult.success) {
-              throw new Error(
-                authResult.error || "Card authentication failed. Please try again."
-              );
-            }
-
-            console.log("[Checkout] 3D Secure payment completed:", authResult.paymentIntentId);
-            return authResult.paymentIntentId!;
           }
 
-          // Check for payment failure
-          if (!chargeResponse.ok) {
-            // If retryable and haven't exceeded max retries, wait and retry
-            if (chargeData.retryable && attempt < MAX_RETRIES) {
-              console.log(`[Checkout] Retryable error (attempt ${attempt + 1}/${MAX_RETRIES}):`, chargeData.declineCode);
-              // Wait 1 second before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              return attemptCharge(attempt + 1);
-            }
+          return authResult.paymentIntentId!;
+        }
 
-            // Not retryable or max retries exceeded
-            throw new Error(chargeData.error || "Payment failed. Please try again.");
+        // Check for payment failure
+        if (!chargeResponse.ok) {
+          // If retryable and haven't exceeded max retries, wait and retry
+          if (chargeData.retryable && attempt < MAX_RETRIES) {
+            // Wait 1 second before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return attemptCharge(attempt + 1);
           }
 
-          return chargeData.paymentIntentId;
-        };
+          // Not retryable or max retries exceeded
+          throw new Error(chargeData.error || "Payment failed. Please try again.");
+        }
 
-        // Start charge attempt
-        paymentIntentId = await attemptCharge(0);
-        setRetryCount(0); // Reset retry count on success
-        console.log("[Checkout] Payment successful:", paymentIntentId);
-      }
+        return chargeData.paymentIntentId;
+      };
+
+      // Start charge attempt
+      paymentIntentId = await attemptCharge(0);
+      setRetryCount(0); // Reset retry count on success
 
       // Step 3: Create reservation with Guesty (payment already collected)
       const response = await fetch("/api/guesty/reservations", {
@@ -178,14 +168,11 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
         // Reservation creation failed AFTER payment succeeded
         // We need to refund the payment
         if (paymentIntentId) {
-          console.error("[Checkout] Reservation failed, initiating refund...");
           try {
             await fetch(`/api/checkout/charge?paymentIntentId=${paymentIntentId}`, {
               method: "DELETE",
             });
-            console.log("[Checkout] Refund initiated successfully");
-          } catch (refundError) {
-            console.error("[Checkout] Refund failed:", refundError);
+          } catch {
             // Still show the original error, but mention the refund issue
             throw new Error(
               `${data.error || "Failed to create reservation"}. Your payment will be refunded.`
@@ -210,7 +197,6 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
 
       router.push(`/booking-confirmed?${params.toString()}`);
     } catch (err) {
-      console.error("Checkout error:", err);
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
       );
@@ -222,26 +208,6 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Test Mode Banner */}
-      {isTestMode && (
-        <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
-              <svg className="w-6 h-6 text-amber-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-amber-900 font-semibold text-lg">TEST MODE</p>
-              <p className="text-amber-700 text-sm">
-                Booking will be created as &quot;Request to Book&quot; (inquiry).
-                Your card will be validated but NOT charged.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Forms */}
         <div className="space-y-6">

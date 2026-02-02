@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
+import { formatPrice, parseDate } from "@/lib/utils/formatters";
 
 interface BookingConfirmedPageProps {
   searchParams: Promise<{
@@ -44,17 +45,8 @@ export default async function BookingConfirmedPage({
   }
 
   // Parse dates
-  const checkInDate = checkIn ? new Date(checkIn + "T12:00:00") : null;
-  const checkOutDate = checkOut ? new Date(checkOut + "T12:00:00") : null;
-
-  // Format price
-  const formatPrice = (amount: string, curr: string) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: curr,
-      minimumFractionDigits: 0,
-    }).format(parseFloat(amount));
-  };
+  const checkInDate = checkIn ? parseDate(checkIn) : null;
+  const checkOutDate = checkOut ? parseDate(checkOut) : null;
 
   return (
     <main className="min-h-screen bg-[#f5f3e8] flex flex-col">

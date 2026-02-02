@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { format } from "date-fns";
 import { GuestyQuoteWithRatePlan, GuestyListing } from "@/types/guesty";
+import { formatPrice, parseDate } from "@/lib/utils/formatters";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface OrderSummaryProps {
   listing: GuestyListing;
@@ -11,15 +13,9 @@ interface OrderSummaryProps {
   onSubmit?: () => void;
 }
 
-// Format price with currency and decimals
-const formatPrice = (amount: number, currency: string = "USD") => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
+// Helper to format with decimals for checkout display
+const formatPriceWithDecimals = (amount: number, currency: string = "USD") =>
+  formatPrice(amount, currency, true);
 
 export default function OrderSummary({ listing, quote, isSubmitting = false, onSubmit }: OrderSummaryProps) {
   // Get first image (prefer larger sizes for full-width display)
@@ -31,8 +27,8 @@ export default function OrderSummary({ listing, quote, isSubmitting = false, onS
     null;
 
   // Parse dates without timezone shift
-  const checkInDate = new Date(quote.checkIn + "T12:00:00");
-  const checkOutDate = new Date(quote.checkOut + "T12:00:00");
+  const checkInDate = parseDate(quote.checkIn);
+  const checkOutDate = parseDate(quote.checkOut);
 
   // Calculate totals for display
   const totalFees = quote.fees.reduce((sum, fee) => sum + fee.amount, 0);
@@ -109,19 +105,19 @@ export default function OrderSummary({ listing, quote, isSubmitting = false, onS
         <div className="flex justify-between text-sm">
           <span className="text-[#643c15]">Subtotal</span>
           <span className="text-[#2e1b12]">
-            {formatPrice(quote.accommodationFare, quote.currency)}
+            {formatPriceWithDecimals(quote.accommodationFare, quote.currency)}
           </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#643c15]">Fees</span>
           <span className="text-[#2e1b12]">
-            {formatPrice(totalFees, quote.currency)}
+            {formatPriceWithDecimals(totalFees, quote.currency)}
           </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[#643c15]">Taxes</span>
           <span className="text-[#2e1b12]">
-            {formatPrice(totalTaxes, quote.currency)}
+            {formatPriceWithDecimals(totalTaxes, quote.currency)}
           </span>
         </div>
       </div>
@@ -130,7 +126,7 @@ export default function OrderSummary({ listing, quote, isSubmitting = false, onS
       <div className="flex justify-between items-center">
         <span className="text-base text-[#2e1b12]">Total</span>
         <span className="text-base text-[#2e1b12]">
-          {formatPrice(quote.totalPrice, quote.currency)}
+          {formatPriceWithDecimals(quote.totalPrice, quote.currency)}
         </span>
       </div>
 
@@ -153,25 +149,7 @@ export default function OrderSummary({ listing, quote, isSubmitting = false, onS
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
-              <svg
-                className="animate-spin h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              <LoadingSpinner size="sm" />
               Processing...
             </span>
           ) : (

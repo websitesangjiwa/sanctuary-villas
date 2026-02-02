@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Villa } from "@/types/villa";
@@ -9,7 +10,7 @@ interface VillaCardProps {
   index?: number;
 }
 
-export default function VillaCard({ villa, index = 0 }: VillaCardProps) {
+const VillaCard = memo(function VillaCard({ villa, index = 0 }: VillaCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -84,4 +85,6 @@ export default function VillaCard({ villa, index = 0 }: VillaCardProps) {
       </div>
     </motion.div>
   );
-}
+});
+
+export default VillaCard;

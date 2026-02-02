@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createReservation, createInquiry, recordPaymentInGuesty } from '@/lib/api/guesty';
+import { createReservation, recordPaymentInGuesty } from '@/lib/api/guesty';
 import { GuestyReservationRequest } from '@/types/guesty';
-
-// Check if test mode is enabled via environment variable
-const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
 
 // Validation helper
 function validateReservationRequest(data: unknown): {
@@ -184,19 +181,12 @@ export async function POST(request: Request) {
     const paymentAmount = typeof body.amount === 'number' ? body.amount : undefined;
     const paymentCurrency = typeof body.currency === 'string' ? body.currency : 'USD';
 
-    // Use inquiry mode if test mode is enabled (creates reservation without charging)
-    // Inquiry creates a "reserved" status that needs manual confirmation in Guesty
-    let reservation;
-    if (isTestMode) {
-      console.log('[TEST MODE] Creating inquiry instead of instant booking');
-      reservation = await createInquiry(validation.request);
-    } else {
-      reservation = await createReservation(validation.request);
-    }
+    // Create instant reservation with payment
+    const reservation = await createReservation(validation.request);
 
     // Record the Stripe payment in Guesty (only if payment was collected via Stripe-first flow)
     // This ensures Guesty Dashboard shows "Paid" status for reservations
-    if (!isTestMode && paymentIntentId && reservation._id && paymentAmount) {
+    if (paymentIntentId && reservation._id && paymentAmount) {
       try {
         await recordPaymentInGuesty({
           reservationId: reservation._id,

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Testimonial } from "@/types/testimonial";
 
@@ -8,7 +9,7 @@ interface TestimonialCardProps {
   isActive?: boolean;
 }
 
-export default function TestimonialCard({
+const TestimonialCard = memo(function TestimonialCard({
   testimonial,
   isActive = false,
 }: TestimonialCardProps) {
@@ -78,4 +79,6 @@ export default function TestimonialCard({
       </div>
     </motion.div>
   );
-}
+});
+
+export default TestimonialCard;
