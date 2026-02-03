@@ -11,26 +11,26 @@ const redis = new Redis({
 // Different rate limiters for different endpoints
 // Using sliding window algorithm for smoother rate limiting
 
-// General API rate limiter: 60 requests per minute
+// General API rate limiter: 80 requests per minute
 export const generalRateLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  limiter: Ratelimit.slidingWindow(80, "1 m"),
   analytics: true,
   prefix: "ratelimit:general",
 });
 
-// Checkout/Payment rate limiter: 10 requests per minute (more strict)
+// Checkout/Payment rate limiter: 20 requests per minute
 export const checkoutRateLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  limiter: Ratelimit.slidingWindow(20, "1 m"),
   analytics: true,
   prefix: "ratelimit:checkout",
 });
 
-// Reservation rate limiter: 5 requests per minute (very strict)
+// Reservation rate limiter: 10 requests per minute
 export const reservationRateLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
   analytics: true,
   prefix: "ratelimit:reservation",
 });
