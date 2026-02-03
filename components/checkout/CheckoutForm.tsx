@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import GuestInfoForm, { GuestInfoFormRef } from "./GuestInfoForm";
 import PaymentForm, { PaymentFormRef } from "./PaymentForm";
 import BillingAddressForm, { BillingAddressFormRef } from "./BillingAddressForm";
@@ -24,7 +25,6 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
   const consentRef = useRef<ConsentCheckboxesRef>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [guestInfoValid, setGuestInfoValid] = useState(false);
   const [paymentValid, setPaymentValid] = useState(false);
   const [consentValid, setConsentValid] = useState(false);
@@ -33,25 +33,24 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     // Validate guest info
     const guestData = guestInfoRef.current?.validate();
     if (!guestData) {
-      setError("Please fill in all required guest information");
+      toast.error("Please fill in all required guest information");
       return;
     }
 
     // Validate and get payment token
     if (!paymentFormRef.current?.isComplete()) {
-      setError("Please enter valid card details");
+      toast.error("Please enter valid card details");
       return;
     }
 
     // Validate consent (required by Guesty API)
     const consentData = consentRef.current?.validate();
     if (!consentData) {
-      setError("Please accept the Privacy Policy and Terms and Conditions");
+      toast.error("Please accept the Privacy Policy and Terms and Conditions");
       return;
     }
 
@@ -61,7 +60,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
       // Step 1: Create payment method token
       const ccToken = await paymentFormRef.current.createPaymentMethod();
       if (!ccToken) {
-        setError("Failed to process card. Please try again.");
+        toast.error("Failed to process card. Please try again.");
         setIsSubmitting(false);
         return;
       }
@@ -199,11 +198,11 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
         email: guestData.email,
       });
 
+      toast.success("Booking confirmed! Redirecting...");
       router.push(`/booking-confirmed?${params.toString()}`);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+      toast.error(errorMessage);
       setIsSubmitting(false);
     }
   };
@@ -296,37 +295,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
             </motion.div>
           )}
 
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-red-50 border border-red-200 rounded-lg"
-            >
-              <div className="flex items-start gap-3">
-                <svg
-                  className="w-5 h-5 text-red-500 mt-0.5 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <p className="text-red-700 text-sm font-medium">
-                    Booking Error
-                  </p>
-                  <p className="text-red-600 text-sm mt-1">{error}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </div>
+          </div>
 
         {/* Right Column - Order Summary */}
         <div className="lg:sticky lg:top-24 lg:self-start">

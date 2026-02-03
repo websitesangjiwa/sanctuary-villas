@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import StructuredData from "@/components/StructuredData";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { Toaster } from "sonner";
 
 const ovo = Ovo({
   weight: "400",
@@ -86,6 +87,7 @@ export default function RootLayout({
           {children}
           <Footer />
         </Providers>
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );

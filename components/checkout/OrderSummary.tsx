@@ -133,7 +133,7 @@ export default function OrderSummary({ listing, quote, isSubmitting = false, onS
       {/* Submit Button */}
       {onSubmit && (
         <button
-          type="submit"
+          type="button"
           onClick={onSubmit}
           disabled={isSubmitting}
           className={`
