@@ -6,9 +6,6 @@ import { checkRateLimit, checkoutRateLimiter } from '@/lib/utils/rateLimit';
 // Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// Maximum allowed amount (prevent unreasonably high charges)
-const MAX_CHARGE_AMOUNT = 100000; // $100,000 USD
-
 interface ChargeRequest {
   paymentMethodId: string;
   amount: number;
@@ -46,10 +43,7 @@ function validateChargeRequest(data: unknown): {
     return { valid: false, error: 'Valid amount is required' };
   }
 
-  // Prevent unreasonably high charges
-  if (body.amount > MAX_CHARGE_AMOUNT) {
-    return { valid: false, error: 'Amount exceeds maximum allowed' };
-  }
+  // Note: No max amount limit - server-side quote verification ensures the amount matches Guesty's price
 
   if (!body.currency || typeof body.currency !== 'string') {
     return { valid: false, error: 'currency is required' };

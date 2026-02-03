@@ -751,9 +751,21 @@ export interface RecordPaymentParams {
 }
 
 export async function recordPaymentInGuesty(params: RecordPaymentParams): Promise<void> {
+  console.log('[Guesty Open API] Recording payment for reservation:', params.reservationId);
+  console.log('[Guesty Open API] Payment details:', {
+    amount: params.amount,
+    currency: params.currency,
+    paymentIntentId: params.paymentIntentId,
+  });
+
   // Check if Open API credentials are configured
   const clientId = process.env.GUESTY_OPEN_API_CLIENT_ID;
   const clientSecret = process.env.GUESTY_OPEN_API_CLIENT_SECRET;
+
+  console.log('[Guesty Open API] Credentials check:', {
+    clientId: clientId ? 'SET' : 'NOT SET',
+    clientSecret: clientSecret ? 'SET' : 'NOT SET',
+  });
 
   if (!clientId || !clientSecret) {
     // Credentials not configured - skip payment recording but don't fail the booking
@@ -765,7 +777,9 @@ export async function recordPaymentInGuesty(params: RecordPaymentParams): Promis
 
   try {
     // Get OAuth token for Open API
+    console.log('[Guesty Open API] Getting OAuth token...');
     const token = await getOpenApiToken();
+    console.log('[Guesty Open API] Token obtained successfully');
 
     // Build request body per Guesty Open API documentation
     // Using "OTHER" method since we collected payment externally via Stripe
@@ -777,6 +791,9 @@ export async function recordPaymentInGuesty(params: RecordPaymentParams): Promis
       paidAt: (params.paidAt || new Date()).toISOString(),
       note: `Paid via Stripe - PaymentIntent: ${params.paymentIntentId}`,
     };
+
+    console.log('[Guesty Open API] Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('[Guesty Open API] Calling:', `${GUESTY_CONFIG.openApiUrl}/reservations/${params.reservationId}/payments`);
 
     const response = await fetch(
       `${GUESTY_CONFIG.openApiUrl}/reservations/${params.reservationId}/payments`,
@@ -791,6 +808,8 @@ export async function recordPaymentInGuesty(params: RecordPaymentParams): Promis
       }
     );
 
+    console.log('[Guesty Open API] Response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[Guesty Open API] Failed to record payment:', response.status, errorText);
@@ -800,8 +819,11 @@ export async function recordPaymentInGuesty(params: RecordPaymentParams): Promis
     }
 
     // Payment recorded successfully - reservation will show as "Paid" in Guesty Dashboard
+    const responseData = await response.json();
+    console.log('[Guesty Open API] ✅ Payment recorded successfully!');
+    console.log('[Guesty Open API] Response:', JSON.stringify(responseData, null, 2));
   } catch (error) {
     // Log error but don't fail - the Stripe payment was already collected
-    console.error('[Guesty Open API] Error recording payment:', error);
+    console.error('[Guesty Open API] ❌ Error recording payment:', error);
   }
 }

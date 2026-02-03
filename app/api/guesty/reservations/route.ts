@@ -188,23 +188,48 @@ export async function POST(request: Request) {
     const paymentAmount = typeof body.amount === 'number' ? body.amount : undefined;
     const paymentCurrency = typeof body.currency === 'string' ? body.currency : 'USD';
 
+    console.log('[Reservations API] Payment info from request:', {
+      paymentIntentId: paymentIntentId || 'NOT PROVIDED',
+      paymentAmount: paymentAmount || 'NOT PROVIDED',
+      paymentCurrency,
+    });
+
     // Create instant reservation with payment
     const reservation = await createReservation(validation.request);
+
+    console.log('[Reservations API] Reservation created:', {
+      reservationId: reservation._id,
+      confirmationCode: reservation.confirmationCode,
+    });
 
     // Record the Stripe payment in Guesty (only if payment was collected via Stripe-first flow)
     // This ensures Guesty Dashboard shows "Paid" status for reservations
     if (paymentIntentId && reservation._id && paymentAmount) {
+      console.log('[Reservations API] Calling recordPaymentInGuesty...');
       try {
+        // Wait 2 seconds for Guesty to sync the reservation between Booking Engine API and Open API
+        // Without this delay, the Open API may return "Reservation not found"
+        console.log('[Reservations API] Waiting 2s for Guesty internal sync...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         await recordPaymentInGuesty({
           reservationId: reservation._id,
           amount: paymentAmount,
           currency: paymentCurrency,
           paymentIntentId,
         });
-      } catch {
+        console.log('[Reservations API] recordPaymentInGuesty completed');
+      } catch (paymentError) {
         // Non-fatal error - the reservation and Stripe payment are already successful
         // Guesty will just show as "unpaid" but the guest has been charged
+        console.error('[Reservations API] recordPaymentInGuesty failed:', paymentError);
       }
+    } else {
+      console.warn('[Reservations API] Skipping payment recording - missing required data:', {
+        hasPaymentIntentId: !!paymentIntentId,
+        hasReservationId: !!reservation._id,
+        hasPaymentAmount: !!paymentAmount,
+      });
     }
 
     return NextResponse.json(reservation, { status: 201 });
