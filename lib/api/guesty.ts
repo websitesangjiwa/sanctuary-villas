@@ -16,10 +16,13 @@ import { Redis } from '@upstash/redis';
 
 // Configuration
 const GUESTY_CONFIG = {
+  // Booking Engine API (for listings, quotes, reservations)
   tokenUrl: 'https://booking.guesty.com/oauth2/token',
   apiUrl: 'https://booking.guesty.com/api',
-  openApiUrl: 'https://open-api.guesty.com/v1', // Open API for payment recording
   bookingUrl: 'https://sanctuaryvillas.guestybookings.com',
+  // Open API (for payment recording, reservation management)
+  openApiTokenUrl: 'https://open-api.guesty.com/oauth2/token',
+  openApiUrl: 'https://open-api.guesty.com/v1',
   cache: {
     // Token refresh buffer: 5 minutes before expiry (per Guesty docs)
     tokenRefreshBuffer: 300,
@@ -52,8 +55,12 @@ function createRedisClient(): Redis | null {
 }
 
 const redis = createRedisClient();
+// Booking Engine API token
 const TOKEN_KEY = 'guesty_token';
 const TOKEN_LOCK_KEY = 'guesty_token_lock';
+// Open API token (separate credentials)
+const OPEN_API_TOKEN_KEY = 'guesty_open_api_token';
+const OPEN_API_TOKEN_LOCK_KEY = 'guesty_open_api_token_lock';
 const LOCK_TTL = 10; // Lock expires in 10 seconds
 
 // Helper for delay
@@ -173,6 +180,111 @@ export async function getGuestyToken(): Promise<string> {
   // Fallback: fetch directly (no Redis or lock failed)
   console.log('Fetching token directly (no cache)...');
   const { access_token } = await fetchGuestyTokenRaw();
+  return access_token;
+}
+
+// ============================================================================
+// OPEN API TOKEN MANAGEMENT
+// The Open API uses separate credentials from the Booking Engine API
+// Generate credentials in: Guesty Dashboard → Integrations → API & Webhooks
+// ============================================================================
+
+// Fetch Open API token (OAuth 2.0 client credentials)
+async function fetchOpenApiTokenRaw(retries = 3): Promise<{ access_token: string; expires_in: number }> {
+  const clientId = process.env.GUESTY_OPEN_API_CLIENT_ID;
+  const clientSecret = process.env.GUESTY_OPEN_API_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      `Missing Guesty Open API credentials. GUESTY_OPEN_API_CLIENT_ID: ${clientId ? 'set' : 'NOT SET'}, GUESTY_OPEN_API_CLIENT_SECRET: ${clientSecret ? 'set' : 'NOT SET'}`
+    );
+  }
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const response = await fetch(GUESTY_CONFIG.openApiTokenUrl, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: 'open-api',
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        access_token: data.access_token,
+        expires_in: data.expires_in || 86400 // Default to 24 hours
+      };
+    }
+
+    // Handle rate limiting with exponential backoff
+    if (response.status === 429 && attempt < retries - 1) {
+      const waitTime = Math.pow(2, attempt + 1) * 1000;
+      console.log(`[Open API] Rate limited, waiting ${waitTime}ms before retry`);
+      await delay(waitTime);
+      continue;
+    }
+
+    const errorText = await response.text();
+    throw new Error(`Failed to get Open API token: ${response.status} - ${errorText}`);
+  }
+
+  throw new Error('Failed to get Open API token after all retries');
+}
+
+// Get Open API token with caching
+async function getOpenApiToken(): Promise<string> {
+  if (redis) {
+    try {
+      const cached = await redis.get<CachedToken>(OPEN_API_TOKEN_KEY);
+      if (cached && Date.now() < cached.expires_at) {
+        return cached.access_token;
+      }
+    } catch (error) {
+      console.error('[Open API] Redis get error:', error);
+    }
+
+    try {
+      const lockAcquired = await redis.set(OPEN_API_TOKEN_LOCK_KEY, '1', {
+        ex: LOCK_TTL,
+        nx: true
+      });
+
+      if (lockAcquired === 'OK') {
+        const { access_token, expires_in } = await fetchOpenApiTokenRaw();
+
+        const tokenData: CachedToken = {
+          access_token,
+          expires_at: Date.now() + (expires_in - GUESTY_CONFIG.cache.tokenRefreshBuffer) * 1000
+        };
+
+        await redis.set(OPEN_API_TOKEN_KEY, tokenData);
+        await redis.del(OPEN_API_TOKEN_LOCK_KEY);
+
+        return access_token;
+      } else {
+        // Another process is fetching - wait and retry
+        for (let i = 0; i < 10; i++) {
+          await delay(500);
+          const cached = await redis.get<CachedToken>(OPEN_API_TOKEN_KEY);
+          if (cached && Date.now() < cached.expires_at) {
+            return cached.access_token;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[Open API] Redis lock error:', error);
+    }
+  }
+
+  // Fallback: fetch directly
+  const { access_token } = await fetchOpenApiTokenRaw();
   return access_token;
 }
 
@@ -639,47 +751,57 @@ export interface RecordPaymentParams {
 }
 
 export async function recordPaymentInGuesty(params: RecordPaymentParams): Promise<void> {
-  // Use the same token - Guesty Open API accepts the Booking Engine OAuth token
-  const token = await getGuestyToken();
+  // Check if Open API credentials are configured
+  const clientId = process.env.GUESTY_OPEN_API_CLIENT_ID;
+  const clientSecret = process.env.GUESTY_OPEN_API_CLIENT_SECRET;
 
-  const requestBody = {
-    paymentMethod: {
-      method: 'STRIPE',
-    },
-    amount: params.amount,
-    currency: params.currency.toUpperCase(),
-    paidAt: (params.paidAt || new Date()).toISOString(),
-    note: `Paid via Stripe - PaymentIntent: ${params.paymentIntentId}`,
-  };
-
-  console.log('[Guesty Open API] Recording payment for reservation:', params.reservationId);
-  console.log('[Guesty Open API] Payment details:', {
-    amount: params.amount,
-    currency: params.currency,
-    paymentIntentId: params.paymentIntentId,
-  });
-
-  const response = await fetch(
-    `${GUESTY_CONFIG.openApiUrl}/reservations/${params.reservationId}/payments`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[Guesty Open API] Failed to record payment:', response.status, errorText);
-    // Don't throw - payment was already collected via Stripe, just log the failure
-    // The reservation is still valid, just shows as "unpaid" in Guesty Dashboard
+  if (!clientId || !clientSecret) {
+    // Credentials not configured - skip payment recording but don't fail the booking
+    // The reservation will show as "unpaid" in Guesty Dashboard
+    console.warn('[Guesty Open API] Open API credentials not configured. Payment will not be recorded in Guesty.');
+    console.warn('[Guesty Open API] Set GUESTY_OPEN_API_CLIENT_ID and GUESTY_OPEN_API_CLIENT_SECRET');
     return;
   }
 
-  const result = await response.json();
-  console.log('[Guesty Open API] Payment recorded successfully:', result);
+  try {
+    // Get OAuth token for Open API
+    const token = await getOpenApiToken();
+
+    // Build request body per Guesty Open API documentation
+    // Using "OTHER" method since we collected payment externally via Stripe
+    const requestBody = {
+      paymentMethod: {
+        method: 'OTHER', // External payment (not processed through Guesty's Stripe)
+      },
+      amount: params.amount,
+      paidAt: (params.paidAt || new Date()).toISOString(),
+      note: `Paid via Stripe - PaymentIntent: ${params.paymentIntentId}`,
+    };
+
+    const response = await fetch(
+      `${GUESTY_CONFIG.openApiUrl}/reservations/${params.reservationId}/payments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Guesty Open API] Failed to record payment:', response.status, errorText);
+      // Don't throw - payment was already collected via Stripe
+      // The reservation is still valid, just shows as "unpaid" in Guesty Dashboard
+      return;
+    }
+
+    // Payment recorded successfully - reservation will show as "Paid" in Guesty Dashboard
+  } catch (error) {
+    // Log error but don't fail - the Stripe payment was already collected
+    console.error('[Guesty Open API] Error recording payment:', error);
+  }
 }
