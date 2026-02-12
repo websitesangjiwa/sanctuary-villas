@@ -40,7 +40,7 @@ export default function VillaList({
     return (
       <div className="space-y-6">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="animate-pulse bg-white rounded-lg p-6">
+          <div key={i} className="animate-pulse bg-[#fffdf3] rounded-lg p-6">
             <div className="flex flex-col xl:flex-row gap-6">
               <div className="w-full xl:w-[261px] h-[160px] bg-gray-300 rounded-lg" />
               <div className="flex-1 space-y-3">
@@ -79,7 +79,7 @@ export default function VillaList({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+            className="bg-[#fffdf3] rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
           >
             <div className="flex flex-col xl:flex-row gap-6 p-6">
               {/* Listing Image */}
@@ -182,7 +182,7 @@ export default function VillaList({
       })}
 
       {availableListings.length === 0 && !isLoading && (
-        <div className="bg-white rounded-lg shadow-lg p-12 text-center">
+        <div className="bg-[#fffdf3] rounded-lg shadow-lg p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg

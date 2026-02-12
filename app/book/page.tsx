@@ -103,7 +103,7 @@ function BookPageContent() {
             className="flex-1"
           >
             {!hasSearched ? (
-              <div className="bg-white rounded-lg shadow-lg p-12 text-center h-full flex items-center justify-center">
+              <div className="bg-[#fffdf3] rounded-lg shadow-lg p-12 text-center h-full flex items-center justify-center">
                 <div className="max-w-md mx-auto">
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg
@@ -163,7 +163,7 @@ function BookPageLoading() {
             </div>
           </div>
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-lg p-12 h-full flex items-center justify-center">
+            <div className="bg-[#fffdf3] rounded-lg shadow-lg p-12 h-full flex items-center justify-center">
               <div className="animate-pulse text-primary">Loading...</div>
             </div>
           </div>
