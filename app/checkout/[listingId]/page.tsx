@@ -65,7 +65,7 @@ export default async function CheckoutPage({
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f3e8]">
+    <main className="min-h-screen bg-surface">
       {/* Booking Flow Header */}
       <div className="pt-20 lg:pt-24">
         <BookingFlowHeader

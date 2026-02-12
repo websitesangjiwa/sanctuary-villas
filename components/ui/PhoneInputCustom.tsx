@@ -150,7 +150,7 @@ export default function PhoneInputCustom({
           onClick={toggleOpen}
           disabled={disabled}
           className={`
-            px-2 py-2 border rounded-lg bg-white
+            px-2 py-2 border rounded-lg bg-white/60
             flex items-center gap-1.5
             focus:outline-none focus:ring-2 focus:ring-[#cab797]/50
             transition-colors text-sm border-[#cab797]/40
@@ -250,7 +250,7 @@ export default function PhoneInputCustom({
         disabled={disabled}
         placeholder={placeholder}
         className={`
-          flex-1 px-3 py-2 border rounded-lg bg-white text-[#2e1b12]
+          flex-1 px-3 py-2 border rounded-lg bg-white/60 text-[#2e1b12]
           placeholder:text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#cab797]/50
           transition-colors text-sm
           ${hasError ? "border-[#fb2c36]" : "border-[#cab797]/40"}

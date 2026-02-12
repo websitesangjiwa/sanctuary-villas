@@ -215,7 +215,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
         {/* Left Column - Forms */}
         <div className="space-y-6">
           {/* Form Header */}
-          <div className="bg-white/40 rounded-xl p-6 border border-[#cab797]/20">
+          <div className="bg-[#fffdf3] rounded-xl p-6 border border-[#cab797]/20">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-['Ovo'] text-xl text-[#2e1b12]">
                 Fill in your details
@@ -247,7 +247,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
           </div>
 
           {/* Payment Details */}
-          <div className="bg-white/40 rounded-xl p-6 border border-[#cab797]/20">
+          <div className="bg-[#fffdf3] rounded-xl p-6 border border-[#cab797]/20">
             <StripeProvider listingId={listing._id}>
               <PaymentForm
                 ref={paymentFormRef}
@@ -258,7 +258,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
           </div>
 
           {/* Billing Address */}
-          <div className="bg-white/40 rounded-xl p-6 border border-[#cab797]/20">
+          <div className="bg-[#fffdf3] rounded-xl p-6 border border-[#cab797]/20">
             <BillingAddressForm
               ref={billingAddressRef}
               disabled={isSubmitting}
@@ -266,7 +266,7 @@ export default function CheckoutForm({ listing, quote }: CheckoutFormProps) {
           </div>
 
           {/* Consent Checkboxes */}
-          <div className="bg-white/40 rounded-xl p-6 border border-[#cab797]/20">
+          <div className="bg-[#fffdf3] rounded-xl p-6 border border-[#cab797]/20">
             <ConsentCheckboxes
               ref={consentRef}
               disabled={isSubmitting}

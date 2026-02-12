@@ -1,6 +1,6 @@
 export default function CheckoutLoading() {
   return (
-    <main className="min-h-screen bg-[#f5f3e8]">
+    <main className="min-h-screen bg-surface">
       {/* Header Skeleton */}
       <header className="bg-white border-b border-primary/10">
         <div className="container mx-auto px-4 py-4">
@@ -26,7 +26,7 @@ export default function CheckoutLoading() {
             {/* Left Column */}
             <div className="space-y-8">
               {/* Guest Info Skeleton */}
-              <div className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="bg-[#fffdf3] rounded-lg p-6 shadow-sm">
                 <div className="h-6 bg-gray-200 rounded w-40 mb-4 animate-pulse" />
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="h-12 bg-gray-200 rounded animate-pulse" />
@@ -37,7 +37,7 @@ export default function CheckoutLoading() {
               </div>
 
               {/* Payment Skeleton */}
-              <div className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="bg-[#fffdf3] rounded-lg p-6 shadow-sm">
                 <div className="h-6 bg-gray-200 rounded w-36 mb-4 animate-pulse" />
                 <div className="h-12 bg-gray-200 rounded animate-pulse" />
               </div>

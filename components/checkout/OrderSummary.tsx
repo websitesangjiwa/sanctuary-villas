@@ -35,7 +35,7 @@ export default function OrderSummary({ listing, quote, isSubmitting = false, onS
   const totalTaxes = quote.taxes?.reduce((sum, tax) => sum + tax.amount, 0) || 0;
 
   return (
-    <div className="bg-white/40 rounded-xl p-6 space-y-4 border border-[#cab797]/20">
+    <div className="bg-[#fffdf3] rounded-xl p-6 space-y-4 border border-[#cab797]/20">
       {/* Full-width Property Image */}
       <div className="relative w-full h-48 rounded-lg overflow-hidden -mt-2">
         {listingImage ? (

@@ -45,7 +45,7 @@ export default function CheckoutContent({
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="bg-white/40 rounded-xl p-6 border border-[#cab797]/20 animate-pulse"
+                className="bg-[#fffdf3] rounded-xl p-6 border border-[#cab797]/20 animate-pulse"
               >
                 <div className="h-6 bg-gray-200 rounded w-1/3 mb-4" />
                 <div className="space-y-3">
@@ -56,7 +56,7 @@ export default function CheckoutContent({
             ))}
           </div>
           <div>
-            <div className="bg-white/40 rounded-xl p-6 border border-[#cab797]/20 animate-pulse">
+            <div className="bg-[#fffdf3] rounded-xl p-6 border border-[#cab797]/20 animate-pulse">
               <div className="h-6 bg-gray-200 rounded w-1/2 mb-4" />
               <div className="space-y-3">
                 <div className="h-4 bg-gray-200 rounded" />

@@ -89,7 +89,7 @@ const GuestInfoForm = forwardRef<GuestInfoFormRef, GuestInfoFormProps>(
     }));
 
     const inputClasses = (field: keyof GuestInfoFormData) => `
-      w-full px-3 py-2 border rounded-lg bg-white text-[#2e1b12]
+      w-full px-3 py-2 border rounded-lg bg-white/60 text-[#2e1b12]
       placeholder:text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#cab797]/50
       transition-colors text-sm
       ${errors[field] ? "border-[#fb2c36]" : "border-[#cab797]/40"}
@@ -216,7 +216,7 @@ const GuestInfoForm = forwardRef<GuestInfoFormRef, GuestInfoFormProps>(
             placeholder="Add a special request"
             rows={3}
             className={`
-              w-full px-3 py-2 border rounded-lg bg-white text-[#2e1b12]
+              w-full px-3 py-2 border rounded-lg bg-white/60 text-[#2e1b12]
               placeholder:text-[#717182] focus:outline-none focus:ring-2 focus:ring-[#cab797]/50
               transition-colors text-sm border-[#cab797]/40 resize-none
               ${disabled ? "opacity-50 cursor-not-allowed bg-gray-50" : ""}

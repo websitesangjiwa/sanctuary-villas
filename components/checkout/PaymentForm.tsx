@@ -134,7 +134,7 @@ const PaymentForm = forwardRef<PaymentFormRef, PaymentFormProps>(
             {CARD_BRANDS.map((brand) => (
               <div
                 key={brand.name}
-                className="w-10 h-6 bg-white border border-[#cab797]/30 rounded flex items-center justify-center"
+                className="w-10 h-6 bg-white/60 border border-[#cab797]/30 rounded flex items-center justify-center"
                 title={brand.name}
               >
                 <Image
@@ -159,7 +159,7 @@ const PaymentForm = forwardRef<PaymentFormRef, PaymentFormProps>(
           </label>
           <div
             className={`
-              p-3 border rounded-lg bg-white transition-colors
+              p-3 border rounded-lg bg-white/60 transition-colors
               ${error ? "border-[#fb2c36]" : "border-[#cab797]/40"}
               ${disabled ? "opacity-50 cursor-not-allowed" : ""}
             `}
