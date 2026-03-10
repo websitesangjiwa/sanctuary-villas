@@ -93,6 +93,19 @@ export default function PropertyBookingCard({
     ? format(checkOutDate, "yyyy-MM-dd")
     : undefined;
 
+  // Sync URL params when dates/guests change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (checkInStr) params.set("checkIn", checkInStr);
+    if (checkOutStr) params.set("checkOut", checkOutStr);
+    if (guests !== 1) params.set("minOccupancy", String(guests));
+    if (pointOfSale) params.set("pointofsale", pointOfSale);
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [checkInStr, checkOutStr, guests, pointOfSale]);
+
   // Use React Query for cached quote fetching
   const { data: quote, isLoading: quoteLoading } = useQuote({
     listingId,
