@@ -5,16 +5,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { BOOKING_URL } from "@/lib/constants/booking";
+
+type NavLink = {
+  name: string;
+  href: string;
+  scrollTo: string | null;
+  external?: boolean;
+};
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  const navLinks = [
+  const navLinks: NavLink[] = [
     { name: "Home", href: "/", scrollTo: null },
     { name: "Villas", href: "/", scrollTo: "villa-styles" },
     { name: "About Us", href: "/", scrollTo: "gallery" },
-    { name: "Book Now", href: "/book", scrollTo: null },
+    { name: "Book Now", href: BOOKING_URL, scrollTo: null, external: true },
   ];
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, scrollTo: string | null, href: string) => {
@@ -43,7 +51,8 @@ export default function Navbar() {
     }
   };
 
-  const isActiveLink = (link: typeof navLinks[0]) => {
+  const isActiveLink = (link: NavLink) => {
+    if (link.external) return false;
     if (link.href !== "/") {
       return pathname === link.href;
     }
@@ -67,20 +76,32 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                onClick={(e) => handleScroll(e, link.scrollTo, link.href)}
-                className={`text-base transition-colors ${
-                  isActiveLink(link)
-                    ? "text-surface"
-                    : "text-[#cab797] hover:text-surface"
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.external ? (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-base transition-colors text-[#cab797] hover:text-surface"
+                >
+                  {link.name}
+                </a>
+              ) : (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={(e) => handleScroll(e, link.scrollTo, link.href)}
+                  className={`text-base transition-colors ${
+                    isActiveLink(link)
+                      ? "text-surface"
+                      : "text-[#cab797] hover:text-surface"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              )
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -142,20 +163,33 @@ export default function Navbar() {
             className="lg:hidden bg-[#2e1b12] border-t border-[#cab797]/20 overflow-hidden"
           >
             <div className="container mx-auto px-8 py-6 flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  onClick={(e) => handleScroll(e, link.scrollTo, link.href)}
-                  className={`text-base transition-colors py-2 ${
-                    isActiveLink(link)
-                      ? "text-surface"
-                      : "text-[#cab797] hover:text-surface"
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              ))}
+              {navLinks.map((link) =>
+                link.external ? (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-base transition-colors py-2 text-[#cab797] hover:text-surface"
+                  >
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={(e) => handleScroll(e, link.scrollTo, link.href)}
+                    className={`text-base transition-colors py-2 ${
+                      isActiveLink(link)
+                        ? "text-surface"
+                        : "text-[#cab797] hover:text-surface"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                )
+              )}
             </div>
           </motion.div>
         )}

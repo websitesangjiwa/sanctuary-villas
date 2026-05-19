@@ -10,6 +10,7 @@ import { Navigation, FreeMode } from "swiper/modules";
 import PropertyBookingCard from "@/components/booking/PropertyBookingCard";
 import BookingFlowHeader from "@/components/booking/BookingFlowHeader";
 import { useListingById } from "@/lib/hooks/useGuesty";
+import { BOOKING_URL } from "@/lib/constants/booking";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -493,12 +494,14 @@ export default function PropertyPage() {
           <p className="text-primary mb-8">
             {error?.message || "The villa you're looking for doesn't exist."}
           </p>
-          <Link
-            href={`/book?checkIn=${checkIn}&checkOut=${checkOut}&guests=${minOccupancy}`}
+          <a
+            href={BOOKING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-block bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
           >
             Back to Search
-          </Link>
+          </a>
         </div>
       </main>
     );

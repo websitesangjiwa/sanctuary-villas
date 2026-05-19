@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import BackgroundVideo from "@/components/ui/BackgroundVideo";
+import { BOOKING_URL } from "@/lib/constants/booking";
 
 export default function HeroSection() {
   return (
@@ -73,15 +73,16 @@ export default function HeroSection() {
             </motion.a>
 
             {/* Book Now Button */}
-            <Link href="/book" className="w-full sm:w-auto">
-              <motion.span
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-surface border border-surface text-primary-dark text-sm font-medium leading-5 px-8 py-2 rounded-lg hover:bg-surface/90 transition-colors w-full sm:w-auto inline-block text-center"
-              >
-                Book Now
-              </motion.span>
-            </Link>
+            <motion.a
+              href={BOOKING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-surface border border-surface text-primary-dark text-sm font-medium leading-5 px-8 py-2 rounded-lg hover:bg-surface/90 transition-colors whitespace-nowrap w-full sm:w-auto text-center"
+            >
+              Book Now
+            </motion.a>
           </motion.div>
         </div>
       </div>

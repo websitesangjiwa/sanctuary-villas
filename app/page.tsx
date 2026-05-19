@@ -16,7 +16,7 @@ export default function Home() {
       <HeroSection />
 
       {/* Booking Section */}
-      <BookingSection />
+      {/*<BookingSection />*/}
 
       {/* Our Villas Section */}
       {/*<OurVillasSection />*/}

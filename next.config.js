@@ -32,6 +32,17 @@ const nextConfig = {
         destination: '/#villa-styles',
         permanent: true,
       },
+      // Booking flow moved to external Cloudbeds reservation page
+      {
+        source: '/book',
+        destination: 'https://us2.cloudbeds.com/en/reservation/Fb8SvY?currency=idr',
+        permanent: false,
+      },
+      {
+        source: '/book/:path*',
+        destination: 'https://us2.cloudbeds.com/en/reservation/Fb8SvY?currency=idr',
+        permanent: false,
+      },
     ]
   },
 }
